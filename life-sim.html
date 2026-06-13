@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tiny Lives — Life Simulation</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Segoe UI','Trebuchet MS',system-ui,sans-serif;background:#0b1224;color:#1e293b;user-select:none;-webkit-user-select:none}
+button{font-family:inherit;cursor:pointer;border:none;transition:transform .12s,box-shadow .12s,filter .12s}
+button:hover{filter:brightness(1.07)}
+button:active{transform:scale(.96)}
+.hidden{display:none!important}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;opacity:0;pointer-events:none;transform:scale(1.04);transition:opacity .5s ease,transform .5s ease}
+.screen.active{opacity:1;pointer-events:auto;transform:scale(1)}
+/* ---------- MENU ---------- */
+#screen-menu{background:linear-gradient(165deg,#38bdf8 0%,#4ade80 62%,#fde047 135%)}
+.menu-deco{position:absolute;font-size:46px;opacity:.4;animation:floaty 6s ease-in-out infinite;pointer-events:none}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-22px) rotate(5deg)}}
+.plumbob{width:30px;height:30px;background:linear-gradient(135deg,#86efac,#16a34a);transform:rotate(45deg);box-shadow:0 0 26px rgba(34,197,94,.9);animation:pbpulse 1.6s ease-in-out infinite;margin-bottom:10px}
+@keyframes pbpulse{0%,100%{transform:rotate(45deg) scale(1)}50%{transform:rotate(45deg) scale(1.18)}}
+.menu-title{font-size:84px;font-weight:800;color:#fff;letter-spacing:2px;text-shadow:0 6px 0 rgba(0,0,0,.13),0 14px 34px rgba(0,0,0,.25);transform:rotate(-2deg);line-height:1}
+.menu-sub{font-size:19px;color:#ffffffdd;margin-bottom:24px;text-shadow:0 2px 8px rgba(0,0,0,.2)}
+.big-btn{font-size:23px;font-weight:800;padding:16px 54px;border-radius:999px;background:#fff;color:#16a34a;box-shadow:0 10px 24px rgba(0,0,0,.22)}
+.big-btn:hover{transform:translateY(-3px) scale(1.03)}
+.menu-credit{position:absolute;bottom:16px;color:#ffffffbb;font-size:13px}
+/* ---------- MAP ---------- */
+.scr-head{font-size:32px;font-weight:800;color:#fff;text-shadow:0 3px 12px rgba(0,0,0,.3)}
+.scr-sub{color:#e2e8f0;font-size:15px;margin-top:-8px}
+#screen-map{background:linear-gradient(165deg,#0ea5e9,#166534)}
+#mapCanvas{border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.4);cursor:pointer;max-width:94vw;max-height:68vh}
+.ghost-btn{background:#ffffff22;color:#fff;padding:9px 22px;border-radius:999px;font-size:15px;font-weight:700;border:1.5px solid #ffffff55}
+/* ---------- MODAL ---------- */
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,10,25,.55);backdrop-filter:blur(4px);z-index:50}
+.modal-card{background:#f8fafc;border-radius:18px;padding:22px 26px;max-width:880px;width:94vw;box-shadow:0 24px 70px rgba(0,0,0,.5);text-align:center}
+.modal-card h3{font-size:24px;color:#0f172a;margin-bottom:2px}
+.modal-card p{color:#64748b;font-size:14px;margin-bottom:14px}
+#layoutChoices{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.layout-card{background:#fff;border:2.5px solid #e2e8f0;border-radius:14px;padding:10px;cursor:pointer;transition:.15s;width:188px}
+.layout-card:hover{border-color:#22c55e;transform:translateY(-4px);box-shadow:0 10px 22px rgba(34,197,94,.25)}
+.layout-card canvas{border-radius:8px}
+.layout-name{font-weight:800;color:#0f172a;margin-top:6px;font-size:15px}
+.layout-price{font-size:13px;color:#16a34a;font-weight:800}
+.layout-desc{font-size:11.5px;color:#64748b;margin-top:2px}
+/* ---------- CREATOR ---------- */
+#screen-creator{background:linear-gradient(160deg,#7dd3fc,#86efac);justify-content:flex-start;padding:16px;overflow:auto}
+#screen-creator .scr-head{color:#065f46;text-shadow:0 2px 0 #ffffff66}
+.creator-wrap{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+.cre-card{background:#ffffffee;border-radius:16px;padding:14px 18px;box-shadow:0 12px 34px rgba(0,0,0,.18)}
+.cre-card h4{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin:11px 0 6px}
+#creatorForm{width:440px}
+#simName{flex:1;padding:9px 12px;border:2px solid #cbd5e1;border-radius:10px;font-size:16px;font-weight:700;color:#0f172a;outline:none}
+#simName:focus{border-color:#22c55e}
+.name-row{display:flex;gap:8px}
+.swatch-row{display:flex;gap:8px;flex-wrap:wrap}
+.swatch{width:33px;height:33px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #cbd5e1;cursor:pointer;padding:0}
+.swatch.sel{box-shadow:0 0 0 3px #16a34a;transform:scale(1.13)}
+.chip{padding:7px 14px;border-radius:999px;background:#f1f5f9;color:#334155;font-weight:700;font-size:13.5px;border:2px solid transparent}
+.chip.sel{background:#dcfce7;color:#15803d;border-color:#22c55e}
+#traitsGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.trait-btn{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:10px;background:#f1f5f9;font-size:13px;font-weight:700;color:#334155;border:2px solid transparent;text-align:left}
+.trait-btn.sel{background:#dcfce7;border-color:#22c55e;color:#166534}
+.trait-btn.dis{opacity:.4;cursor:not-allowed}
+.cre-msg{min-height:18px;font-size:13px;font-weight:700;color:#dc2626;margin-top:6px}
+.cta{width:100%;margin-top:8px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:800;box-shadow:0 8px 18px rgba(22,163,74,.35)}
+.cta:disabled{filter:grayscale(.7);opacity:.6;cursor:not-allowed}
+.ghost2{width:100%;margin-top:8px;background:#e2e8f0;color:#475569;border-radius:12px;padding:10px;font-weight:700}
+#previewCanvas{background:linear-gradient(180deg,#bae6fd,#dcfce7);border-radius:12px}
+.house-list{width:250px;max-height:300px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.house-item{display:flex;align-items:center;gap:8px;background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:6px 8px}
+.house-item canvas{border-radius:8px;background:#e0f2fe;flex-shrink:0}
+.hi-info{flex:1;min-width:0}
+.hi-name{font-weight:800;font-size:13.5px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi-traits{font-size:10.5px;color:#64748b}
+.mini-btn{background:#e2e8f0;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;color:#475569}
+.mini-btn.red{background:#fee2e2;color:#b91c1c}
+/* ---------- GAME ---------- */
+#screen-game{background:radial-gradient(circle at 50% 35%,#1d4a2c,#0a1f12);justify-content:flex-start}
+#toolbar{position:absolute;top:0;left:0;right:0;height:54px;background:linear-gradient(180deg,rgba(8,15,33,.94),rgba(8,15,33,.8));backdrop-filter:blur(8px);display:flex;align-items:center;gap:9px;padding:0 14px;z-index:30;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+.tb-logo{font-weight:800;color:#4ade80;font-size:16px;letter-spacing:.5px;margin-right:4px}
+.tb-pill{background:#ffffff14;color:#e2e8f0;border-radius:999px;padding:6px 13px;font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:6px}
+#tbClock{font-variant-numeric:tabular-nums;min-width:86px;justify-content:center}
+.speed-btn{width:34px;height:34px;border-radius:9px;background:#ffffff14;color:#cbd5e1;font-size:14px}
+.speed-btn.active{background:#22c55e;color:#06230f;box-shadow:0 0 12px rgba(34,197,94,.55)}
+.tb-btn{padding:8px 13px;border-radius:10px;background:#ffffff14;color:#e2e8f0;font-weight:700;font-size:13px}
+.tb-btn.on{background:#f59e0b;color:#2a1700;box-shadow:0 0 14px rgba(245,158,11,.55)}
+.tb-spacer{flex:1}
+#gameWrap{position:absolute;inset:54px 0 0 0;display:flex;align-items:center;justify-content:center;padding:10px}
+#gameCanvas{border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.55);max-width:100%;max-height:100%}
+#simPanel{position:absolute;left:12px;bottom:12px;width:282px;background:rgba(8,15,33,.88);backdrop-filter:blur(8px);border-radius:16px;padding:12px;z-index:20;color:#e2e8f0;box-shadow:0 12px 34px rgba(0,0,0,.45);border:1px solid #ffffff18}
+.sp-top{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+#spPortrait{border-radius:12px;background:#1e293b;flex-shrink:0}
+#spName{font-weight:800;font-size:16.5px;color:#fff}
+#spTraits{font-size:11px;color:#94a3b8;margin-top:1px}
+#spMood{font-size:12.5px;font-weight:800;margin-top:3px}
+#spAction{font-size:11.5px;color:#7dd3fc;min-height:15px;margin-bottom:7px;font-weight:600}
+.need-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.need-ico{width:17px;font-size:11px;text-align:center}
+.need-label{width:50px;font-size:10.5px;color:#cbd5e1;font-weight:700}
+.need-track{flex:1;height:11px;border-radius:6px;background:#070d1c;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
+.need-fill{height:100%;border-radius:6px;transition:width .25s}
+.need-val{width:26px;font-size:10px;color:#94a3b8;text-align:right;font-variant-numeric:tabular-nums}
+#portraitBar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:20}
+.portrait-btn{width:48px;height:48px;border-radius:14px;background:rgba(8,15,33,.85);border:2px solid #ffffff25;padding:0;overflow:hidden}
+.portrait-btn.sel{border-color:#4ade80;box-shadow:0 0 14px rgba(74,222,128,.6)}
+#buildPanel{position:absolute;right:12px;top:66px;bottom:12px;width:254px;background:rgba(8,15,33,.92);backdrop-filter:blur(8px);border-radius:16px;padding:12px;z-index:25;color:#e2e8f0;display:flex;flex-direction:column;gap:8px;border:1px solid #ffffff18;transform:translateX(290px);transition:transform .35s ease}
+#buildPanel.open{transform:translateX(0)}
+#buildTabs{display:flex;flex-wrap:wrap;gap:5px}
+.build-tab{padding:5px 9px;border-radius:8px;background:#ffffff12;color:#cbd5e1;font-size:11px;font-weight:800}
+.build-tab.active{background:#22c55e;color:#06230f}
+#buildItems{flex:1;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:7px;align-content:start}
+.build-item{background:#ffffff10;border:2px solid transparent;border-radius:11px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;color:#e2e8f0;cursor:grab}
+.build-item .bi-ico{font-size:21px}
+.build-item .bi-name{font-size:11px;font-weight:700;text-align:center}
+.build-item .bi-price{font-size:10px;color:#86efac;font-weight:700}
+.build-item.sel{border-color:#22c55e;background:#22c55e22}
+#buildHint{font-size:10.5px;color:#94a3b8;line-height:1.4}
+#relPanel{position:absolute;right:12px;top:66px;width:252px;max-height:60vh;overflow:auto;background:rgba(8,15,33,.92);border-radius:16px;padding:12px;z-index:26;color:#e2e8f0;border:1px solid #ffffff18}
+.rel-row{margin-bottom:9px}
+.rel-name{font-size:12.5px;font-weight:700;margin-bottom:3px;display:flex;justify-content:space-between}
+.rel-track{height:9px;border-radius:5px;background:#070d1c;overflow:hidden}
+.rel-fill{height:100%;border-radius:5px}
+.panel-x{float:right;background:#ffffff14;color:#cbd5e1;border-radius:7px;width:22px;height:22px;font-size:11px}
+.panel-head{font-size:11px;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+#ctxMenu{position:fixed;z-index:60;background:rgba(8,15,33,.96);border:1px solid #ffffff22;border-radius:13px;padding:6px;min-width:160px;box-shadow:0 14px 40px rgba(0,0,0,.55)}
+.ctx-title{font-size:10.5px;color:#94a3b8;font-weight:800;padding:4px 9px;text-transform:uppercase;letter-spacing:.5px}
+.ctx-item{display:flex;width:100%;align-items:center;gap:8px;background:transparent;color:#e2e8f0;padding:8px 10px;border-radius:9px;font-size:13px;font-weight:700;text-align:left}
+.ctx-item:hover{background:#22c55e;color:#06230f}
+#buildBadge{position:absolute;top:64px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#2a1700;font-weight:800;font-size:11.5px;letter-spacing:1.4px;padding:5px 16px;border-radius:999px;z-index:24;box-shadow:0 6px 16px rgba(245,158,11,.4)}
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);color:#fff;padding:9px 20px;border-radius:999px;font-weight:700;font-size:13.5px;z-index:70;opacity:0;transition:opacity .3s;pointer-events:none;border:1px solid #ffffff30}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- ============ MAIN MENU ============ -->
+<div id="screen-menu" class="screen active">
+  <div class="menu-deco" style="top:13%;left:13%">🏠</div>
+  <div class="menu-deco" style="top:24%;right:15%;animation-delay:-2s">🌳</div>
+  <div class="menu-deco" style="bottom:20%;left:19%;animation-delay:-4s">☀️</div>
+  <div class="menu-deco" style="bottom:26%;right:12%;animation-delay:-1s">🛋️</div>
+  <div class="menu-deco" style="top:60%;left:7%;animation-delay:-3s">🚿</div>
+  <div class="menu-deco" style="top:8%;right:38%;animation-delay:-5s">📺</div>
+  <div class="plumbob"></div>
+  <div class="menu-title">Tiny Lives</div>
+  <div class="menu-sub">a cozy little life simulator — build, live, thrive</div>
+  <button class="big-btn" id="btnNewGame">▶ &nbsp;New Game</button>
+  <div class="menu-credit">All drawn in Canvas 2D • single HTML file • no installs</div>
+</div>
+
+<!-- ============ NEIGHBORHOOD MAP ============ -->
+<div id="screen-map" class="screen">
+  <div class="scr-head">🗺️ Sunny Brook Heights</div>
+  <div class="scr-sub">Click a lot to choose it — move into a furnished home, or build from scratch</div>
+  <canvas id="mapCanvas" width="900" height="540"></canvas>
+  <button class="ghost-btn" id="btnMapBack">← Back to menu</button>
+</div>
+
+<!-- lot choice modal -->
+<div id="lotModal" class="modal hidden">
+  <div class="modal-card">
+    <h3 id="lotModalTitle">Lot</h3>
+    <p>Pick a furnished layout, or start from an empty plot and build your own home.</p>
+    <div id="layoutChoices"></div>
+    <button class="ghost2" style="width:auto;padding:10px 28px" id="btnLotCancel">Cancel</button>
+  </div>
+</div>
+
+<!-- ============ SIM CREATOR ============ -->
+<div id="screen-creator" class="screen">
+  <div class="scr-head" style="margin-top:4px">✨ Create Your Household</div>
+  <div class="creator-wrap">
+    <div class="cre-card" id="creatorForm">
+      <h4 style="margin-top:0">Name</h4>
+      <div class="name-row">
+        <input id="simName" maxlength="18" placeholder="Sim name…">
+        <button class="mini-btn" id="btnRandName" title="Random name" style="font-size:17px">🎲</button>
+      </div>
+      <h4>Gender</h4>
+      <div class="swatch-row" id="genderRow">
+        <button class="chip sel" data-g="female">♀ Female</button>
+        <button class="chip" data-g="male">♂ Male</button>
+      </div>
+      <h4>Skin Tone</h4><div class="swatch-row" id="skinRow"></div>
+      <h4>Hair Style</h4><div class="swatch-row" id="hairStyleRow"></div>
+      <h4>Hair Color</h4><div class="swatch-row" id="hairColorRow"></div>
+      <h4>Outfit Color</h4><div class="swatch-row" id="outfitRow"></div>
+      <h4>Personality — pick 3 traits (<span id="traitCount">0</span>/3)</h4>
+      <div id="traitsGrid"></div>
+      <div class="cre-msg" id="creatorMsg"></div>
+      <button class="cta" id="btnAddSim">➕ Add Sim to Household</button>
+    </div>
+    <div class="cre-card" style="display:flex;flex-direction:column;align-items:center;gap:6px">
+      <canvas id="previewCanvas" width="230" height="290"></canvas>
+      <div style="font-size:12px;color:#64748b;font-weight:700">Live preview</div>
+    </div>
+    <div class="cre-card" style="width:282px">
+      <h4 style="margin-top:0">Household (<span id="houseCount">0</span>)</h4>
+      <div class="house-list" id="householdList"></div>
+      <button class="cta" id="btnMoveIn">🏡 Move In!</button>
+      <button class="ghost2" id="btnCreatorBack">← Back to map</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ GAME ============ -->
+<div id="screen-game" class="screen">
+  <div id="toolbar">
+    <div class="tb-logo">◆ Tiny Lives</div>
+    <div class="tb-pill" id="tbClock">☀️ 08:00</div>
+    <div class="tb-pill" id="tbDay">Day 1</div>
+    <button class="speed-btn" id="spd0" title="Pause">⏸</button>
+    <button class="speed-btn active" id="spd1" title="Normal speed">▶</button>
+    <button class="speed-btn" id="spd3" title="Fast speed">⏩</button>
+    <div class="tb-pill" id="tbFunds">§ 20,000</div>
+    <div class="tb-spacer"></div>
+    <button class="tb-btn" id="btnRel">💞 Relations</button>
+    <button class="tb-btn" id="btnBuild">🔨 Build Mode</button>
+    <button class="tb-btn" id="btnQuit">⏏ Menu</button>
+  </div>
+  <div id="gameWrap"><canvas id="gameCanvas" width="936" height="612"></canvas></div>
+  <div id="buildBadge" class="hidden">🔨 BUILD MODE — TIME PAUSED</div>
+  <div id="simPanel">
+    <div class="sp-top">
+      <canvas id="spPortrait" width="56" height="56"></canvas>
+      <div style="min-width:0">
+        <div id="spName">—</div>
+        <div id="spTraits"></div>
+        <div id="spMood"></div>
+      </div>
+    </div>
+    <div id="spAction"></div>
+    <div id="spNeeds"></div>
+  </div>
+  <div id="portraitBar"></div>
+  <div id="buildPanel">
+    <div class="panel-head" style="margin-bottom:0">🔨 Build &amp; Buy</div>
+    <div id="buildTabs"></div>
+    <div id="buildItems"></div>
+    <div id="buildHint"></div>
+  </div>
+  <div id="relPanel" class="hidden">
+    <button class="panel-x" id="btnRelX">✕</button>
+    <div class="panel-head">💞 Relationships</div>
+    <div id="relList"></div>
+  </div>
+</div>
+
+<div id="ctxMenu" class="hidden"></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   Tiny Lives — a complete life-sim in one file. Canvas 2D, no frameworks.
+   ===================================================================== */
+
+// ---------- constants & tiny helpers ----------
+const TILE=36, COLS=26, ROWS=17;            // world grid (canvas is 936x612)
+const NEEDS=['hunger','energy','hygiene','fun','social'];
+const NEED_META={
+  hunger :{label:'Hunger', color:'#fb923c', icon:'🍔', decay:0.115},
+  energy :{label:'Energy', color:'#fde047', icon:'⚡', decay:0.100},
+  hygiene:{label:'Hygiene',color:'#22d3ee', icon:'🫧', decay:0.075},
+  fun    :{label:'Fun',    color:'#c084fc', icon:'🎈', decay:0.135},
+  social :{label:'Social', color:'#4ade80', icon:'💬', decay:0.095},
+};
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const irnd=(a,b)=>Math.floor(rnd(a,b+1));
+const choice=arr=>arr[Math.floor(Math.random()*arr.length)];
+const dist2=(x1,y1,x2,y2)=>Math.hypot(x2-x1,y2-y1);
+const money=n=>'§ '+Math.round(n).toLocaleString('en-US');
+let _uid=1; const uid=()=>_uid++;
+
+// ---------- global game state ----------
+const G={
+  screen:'menu',
+  lot:null,                 // {name, layout:'cottage'|'family'|'loft'|'empty', price}
+  household:[],             // live Sim objects (in game)
+  grid:null,                // ROWS x COLS of 'grass' | 'floor' | 'wall'
+  occ:null,                 // ROWS x COLS -> furniture object or null
+  furniture:[],
+  funds:20000,
+  time:{min:8*60, day:1, speed:1, prevSpeed:1},
+  selectedSim:null,
+  build:{active:false, tool:null, item:null, cat:'Build', roomStart:null, hover:null, painting:false},
+  rel:{},                   // 'loId|hiId' -> 0..100
+  relOpen:false,
+};
+
+let toastTimer=null;
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function showScreen(name){
+  G.screen=name;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id==='screen-'+name));
+}
+
+// =====================================================================
+// DATA: traits, appearance options, furniture catalog, house layouts
+// =====================================================================
+const TRAITS={
+  lazy:     {name:'Lazy',      emoji:'🛋️', blurb:'Energy drains fast, loves the sofa',   decay:{energy:1.45}, weight:{fun:1.25}, speed:0.85},
+  energetic:{name:'Energetic', emoji:'⚡',  blurb:'Rarely tired, walks fast',             decay:{energy:0.60}, weight:{}, speed:1.25},
+  creative: {name:'Creative',  emoji:'🎨',  blurb:'Gets bored quickly, needs Fun',        decay:{fun:1.40},    weight:{fun:1.35}},
+  social:   {name:'Social',    emoji:'💬',  blurb:'Craves company, chats a lot',          decay:{social:1.50}, weight:{social:1.6}},
+  loner:    {name:'Loner',     emoji:'🌙',  blurb:'Barely needs company',                 decay:{social:0.45}, weight:{social:0.4}},
+  grumpy:   {name:'Grumpy',    emoji:'😠',  blurb:'Argues more, mood always lower',       decay:{}, weight:{}, moodPenalty:9, argue:true},
+  neat:     {name:'Neat',      emoji:'✨',  blurb:'Feels dirty sooner, loves showers',    decay:{hygiene:1.45}, weight:{hygiene:1.5}},
+  slob:     {name:'Slob',      emoji:'🍕',  blurb:'Hardly cares about hygiene',           decay:{hygiene:0.50}, weight:{hygiene:0.5}},
+  foodie:   {name:'Foodie',    emoji:'🍳',  blurb:'Hungry often, enjoys food more',       decay:{hunger:1.40}, weight:{hunger:1.35}, eatBonus:1.4},
+  bookworm: {name:'Bookworm',  emoji:'📚',  blurb:'Reading is twice the fun',             decay:{}, weight:{}, bookBonus:2},
+};
+const SKINS=['#f6d7b0','#eac086','#d29b6c','#a96f44','#7c4a26','#553016'];
+const HAIRCOLORS=['#241b12','#5b3a1e','#a86b2d','#d9a441','#e8e6e3','#c4452e','#7b3fa0','#3273dc'];
+const HAIRSTYLES=[{id:'short',name:'Short'},{id:'long',name:'Long'},{id:'pony',name:'Ponytail'},{id:'mohawk',name:'Mohawk'},{id:'buns',name:'Buns'}];
+const OUTFITS=['#e74c3c','#e67e22','#f1c40f','#2ecc71','#1abc9c','#3498db','#9b59b6','#e84393','#2d3436','#f5f6fa'];
+const NAMES_F=['Mila','Sofia','June','Hazel','Ruby','Nora','Ivy','Luna','Cleo','Margot','Wren','Poppy','Elsie','Maeve'];
+const NAMES_M=['Theo','Felix','Oscar','Milo','Jasper','Hugo','Arthur','Leo','Otis','Caleb','Finn','Ezra','Gus','Remy'];
+
+// Furniture catalog. use:'on' = sim stands/lies on the object, 'front' = sim
+// stands on the tile south of the object. restores = need gain per game-minute.
+const FURN={
+  bed:      {name:'Bed',      cat:'Bedroom',    w:1,h:2,price:650, icon:'🛏️', use:'on',    restores:{energy:0.38}, label:'Sleep',      busyIcon:'😴', verb:'Sleeping'},
+  dresser:  {name:'Dresser',  cat:'Bedroom',    w:1,h:1,price:310, icon:'🗄️', decor:true},
+  fridge:   {name:'Fridge',   cat:'Kitchen',    w:1,h:1,price:800, icon:'🧊', use:'front', restores:{hunger:3.4},  label:'Grab Food',  busyIcon:'🍔', verb:'Eating'},
+  counter:  {name:'Counter',  cat:'Kitchen',    w:1,h:1,price:210, icon:'🍳', decor:true},
+  table:    {name:'Table',    cat:'Kitchen',    w:1,h:1,price:260, icon:'🪑', decor:true},
+  shower:   {name:'Shower',   cat:'Bathroom',   w:1,h:1,price:600, icon:'🚿', use:'on',    restores:{hygiene:4.5}, label:'Take Shower',busyIcon:'🚿', verb:'Showering'},
+  toilet:   {name:'Toilet',   cat:'Bathroom',   w:1,h:1,price:350, icon:'🚽', use:'on',    restores:{hygiene:2.2}, maxMin:7, label:'Use Toilet', busyIcon:'🚽', verb:'On the toilet'},
+  sink:     {name:'Sink',     cat:'Bathroom',   w:1,h:1,price:240, icon:'🫧', use:'front', restores:{hygiene:3.0}, maxMin:6, label:'Wash Hands', busyIcon:'🫧', verb:'Washing hands'},
+  sofa:     {name:'Sofa',     cat:'Living Room',w:2,h:1,price:720, icon:'🛋️', use:'on',    restores:{fun:0.7,energy:0.28}, label:'Sit & Relax', busyIcon:'🛋️', verb:'Relaxing'},
+  tv:       {name:'TV',       cat:'Living Room',w:2,h:1,price:950, icon:'📺', use:'front', restores:{fun:1.5},     label:'Watch TV',   busyIcon:'📺', verb:'Watching TV', light:true},
+  bookshelf:{name:'Bookshelf',cat:'Living Room',w:1,h:1,price:420, icon:'📚', use:'front', restores:{fun:1.15},    label:'Read a Book',busyIcon:'📚', verb:'Reading'},
+  lamp:     {name:'Lamp',     cat:'Living Room',w:1,h:1,price:120, icon:'💡', decor:true, light:true},
+  plant:    {name:'Plant',    cat:'Living Room',w:1,h:1,price:90,  icon:'🪴', decor:true},
+};
+const WALL_COST=10, FLOOR_COST=5;
+const BUILD_CATS=['Build','Bedroom','Kitchen','Bathroom','Living Room'];
+
+// ---------- layout stamping helpers ----------
+function blankGrid(){ return Array.from({length:ROWS},()=>Array(COLS).fill('grass')); }
+function stampRoom(g,c0,r0,c1,r1){
+  for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){
+    const edge=(r===r0||r===r1||c===c0||c===c1);
+    g[r][c]=edge?'wall':'floor';
+  }
+}
+function stampDoor(g,c,r){ g[r][c]='floor'; }
+function mkFurn(type,c,r){ const d=FURN[type]; return {id:uid(),type,c,r,w:d.w,h:d.h,user:null}; }
+
+// Pre-built house layouts (3 to pick from)
+const LAYOUTS={
+  cottage:{
+    name:'Cozy Cottage', price:6400, desc:'Snug 3-room starter with everything you need',
+    build(g,f){
+      stampRoom(g,6,4,14,12);            // living + kitchen
+      stampRoom(g,14,4,20,8);            // bedroom
+      stampRoom(g,14,8,20,12);           // bathroom
+      stampDoor(g,10,12); stampDoor(g,14,6); stampDoor(g,14,10);
+      [['fridge',7,5],['counter',8,5],['tv',11,5],['sofa',10,8],['table',8,8],
+       ['bookshelf',13,7],['lamp',7,11],['bed',15,5],['dresser',17,5],['plant',19,7],
+       ['toilet',15,9],['shower',17,9],['sink',19,9],['lamp',19,11]
+      ].forEach(a=>f.push(mkFurn(a[0],a[1],a[2])));
+    }
+  },
+  family:{
+    name:'Family Home', price:9200, desc:'Two bedrooms, big kitchen — room for everyone',
+    build(g,f){
+      stampRoom(g,4,3,14,9);             // living
+      stampRoom(g,4,9,14,14);            // kitchen
+      stampRoom(g,14,3,20,8);            // bedroom 1
+      stampRoom(g,14,8,20,13);           // bedroom 2
+      stampRoom(g,20,8,24,13);           // bathroom
+      stampDoor(g,9,14); stampDoor(g,7,9); stampDoor(g,14,6); stampDoor(g,17,8); stampDoor(g,20,10);
+      [['sofa',7,5],['tv',7,7],['bookshelf',12,4],['lamp',5,4],['plant',13,8],
+       ['fridge',5,10],['counter',6,10],['counter',7,10],['table',9,11],['lamp',13,10],
+       ['bed',15,4],['dresser',18,4],['lamp',19,6],
+       ['bed',15,9],['bed',18,9],['dresser',16,12],
+       ['toilet',21,9],['shower',23,9],['sink',21,11]
+      ].forEach(a=>f.push(mkFurn(a[0],a[1],a[2])));
+    }
+  },
+  loft:{
+    name:'Modern Loft', price:7600, desc:'One big open studio plus a sleek bathroom',
+    build(g,f){
+      stampRoom(g,7,4,19,12);            // open studio
+      stampRoom(g,19,4,24,9);            // bathroom
+      stampDoor(g,13,12); stampDoor(g,19,6);
+      [['bed',8,5],['dresser',10,5],['tv',12,5],['counter',16,5],['fridge',17,5],
+       ['sofa',12,7],['table',15,8],['bookshelf',8,9],['lamp',9,11],['plant',18,11],
+       ['shower',20,5],['toilet',22,5],['sink',23,7]
+      ].forEach(a=>f.push(mkFurn(a[0],a[1],a[2])));
+    }
+  },
+};
+
+// =====================================================================
+// MENU + NEIGHBORHOOD MAP
+// =====================================================================
+const MAP_LOTS=[
+  {id:0,name:'1 Willow Lane',  x:96, y:120,w:190,h:150},
+  {id:1,name:'2 Willow Lane',  x:96, y:330,w:190,h:150},
+  {id:2,name:'7 Maple Court',  x:614,y:120,w:190,h:150},
+  {id:3,name:'8 Maple Court',  x:614,y:330,w:190,h:150},
+];
+let mapHover=-1;
+
+function drawMap(){
+  const cv=$('mapCanvas'), x=cv.getContext('2d');
+  // grass base with soft texture
+  x.fillStyle='#7cb95c'; x.fillRect(0,0,900,540);
+  for(let i=0;i<260;i++){
+    const px=(i*137)%900, py=(i*73)%540;
+    x.fillStyle=(i%2)?'#74b154':'#83c163'; x.fillRect(px,py,14,14);
+  }
+  // river
+  x.fillStyle='#4aa3df';
+  x.beginPath(); x.moveTo(380,-10); x.bezierCurveTo(330,160,470,300,400,560);
+  x.bezierCurveTo(470,330,330,170,400,-10); x.lineWidth=46; x.strokeStyle='#4aa3df'; x.stroke();
+  x.lineWidth=38; x.strokeStyle='#63b5ea'; x.stroke();
+  // roads
+  x.fillStyle='#9aa3ad'; x.fillRect(0,250,900,44); x.fillRect(430,0,44,540);
+  x.strokeStyle='#f5f6fa'; x.setLineDash([18,16]); x.lineWidth=3;
+  x.beginPath(); x.moveTo(0,272); x.lineTo(900,272); x.moveTo(452,0); x.lineTo(452,540); x.stroke();
+  x.setLineDash([]);
+  // trees
+  const trees=[[60,60],[330,40],[560,60],[850,80],[60,500],[340,480],[760,500],[870,300],[30,290],[520,480]];
+  for(const t of trees){
+    x.fillStyle='rgba(0,0,0,.18)'; x.beginPath(); x.ellipse(t[0]+3,t[1]+16,14,6,0,0,7); x.fill();
+    x.fillStyle='#6b4a2b'; x.fillRect(t[0]-3,t[1],6,16);
+    x.fillStyle='#2f8f46'; x.beginPath(); x.arc(t[0],t[1]-8,16,0,7); x.fill();
+    x.fillStyle='#3da556'; x.beginPath(); x.arc(t[0]-7,t[1]-2,10,0,7); x.fill();
+  }
+  // lots
+  MAP_LOTS.forEach((L,i)=>{
+    const hov=i===mapHover;
+    x.save();
+    if(hov){ x.translate(L.x+L.w/2,L.y+L.h/2); x.scale(1.04,1.04); x.translate(-L.x-L.w/2,-L.y-L.h/2); }
+    // plot
+    x.fillStyle='rgba(0,0,0,.16)'; roundRect(x,L.x+5,L.y+8,L.w,L.h,14); x.fill();
+    x.fillStyle=hov?'#b8e09a':'#a5d486'; roundRect(x,L.x,L.y,L.w,L.h,14); x.fill();
+    x.lineWidth=4; x.strokeStyle=hov?'#22c55e':'#86b96a'; x.stroke();
+    // little house glyph
+    const hx=L.x+L.w/2, hy=L.y+62;
+    x.fillStyle='rgba(0,0,0,.15)'; x.beginPath(); x.ellipse(hx,hy+34,44,9,0,0,7); x.fill();
+    x.fillStyle='#f5e6c8'; x.fillRect(hx-36,hy-6,72,40);
+    x.fillStyle='#d2694a'; x.beginPath(); x.moveTo(hx-46,hy-4); x.lineTo(hx,hy-38); x.lineTo(hx+46,hy-4); x.closePath(); x.fill();
+    x.fillStyle='#7c5230'; x.fillRect(hx-8,hy+12,16,22);
+    x.fillStyle='#9adcf0'; x.fillRect(hx-30,hy+4,14,12); x.fillRect(hx+16,hy+4,14,12);
+    // sign
+    x.fillStyle='#0f172a'; x.font='800 15px Segoe UI'; x.textAlign='center';
+    x.fillText(L.name,hx,L.y+L.h-26);
+    x.fillStyle='#166534'; x.font='700 12px Segoe UI';
+    x.fillText(hov?'Click to choose!':'For Sale',hx,L.y+L.h-10);
+    x.restore();
+  });
+  // title banner
+  x.fillStyle='rgba(8,15,33,.75)'; roundRect(x,300,8,300,34,17); x.fill();
+  x.fillStyle='#fff'; x.font='800 16px Segoe UI'; x.textAlign='center';
+  x.fillText('🏡 Pick your future home',450,30);
+}
+function roundRect(x,px,py,w,h,r){
+  x.beginPath(); x.moveTo(px+r,py); x.arcTo(px+w,py,px+w,py+h,r); x.arcTo(px+w,py+h,px,py+h,r);
+  x.arcTo(px,py+h,px,py,r); x.arcTo(px,py,px+w,py,r); x.closePath();
+}
+function mapPos(e){
+  const cv=$('mapCanvas'), r=cv.getBoundingClientRect();
+  return {x:(e.clientX-r.left)*cv.width/r.width, y:(e.clientY-r.top)*cv.height/r.height};
+}
+function lotAt(p){ return MAP_LOTS.findIndex(L=>p.x>=L.x&&p.x<=L.x+L.w&&p.y>=L.y&&p.y<=L.y+L.h); }
+
+// ---------- lot modal ----------
+let pendingLot=null;
+function openLotModal(lotIdx){
+  pendingLot=MAP_LOTS[lotIdx];
+  $('lotModalTitle').textContent='🏡 '+pendingLot.name;
+  const box=$('layoutChoices'); box.innerHTML='';
+  for(const key of Object.keys(LAYOUTS)){
+    const L=LAYOUTS[key];
+    const card=document.createElement('div'); card.className='layout-card';
+    const cv=document.createElement('canvas'); cv.width=164; cv.height=104;
+    card.appendChild(cv);
+    card.insertAdjacentHTML('beforeend',
+      `<div class="layout-name">${L.name}</div><div class="layout-price">${money(L.price)}</div><div class="layout-desc">${L.desc}</div>`);
+    card.onclick=()=>chooseLot(key);
+    box.appendChild(card);
+    drawLayoutPreview(cv,key);
+  }
+  const empty=document.createElement('div'); empty.className='layout-card';
+  empty.innerHTML=`<canvas width="164" height="104"></canvas>
+    <div class="layout-name">Empty Plot</div><div class="layout-price">${money(0)}</div>
+    <div class="layout-desc">A blank lawn — build your dream home yourself</div>`;
+  empty.onclick=()=>chooseLot('empty');
+  box.appendChild(empty);
+  drawLayoutPreview(empty.querySelector('canvas'),'empty');
+  $('lotModal').classList.remove('hidden');
+}
+function chooseLot(layoutKey){
+  const price=layoutKey==='empty'?0:LAYOUTS[layoutKey].price;
+  G.lot={name:pendingLot.name, layout:layoutKey, price};
+  $('lotModal').classList.add('hidden');
+  resetCreator(true);
+  showScreen('creator');
+}
+function drawLayoutPreview(cv,key){
+  const x=cv.getContext('2d'), sx=cv.width/COLS, sy=cv.height/ROWS;
+  const g=blankGrid(), f=[];
+  if(key!=='empty') LAYOUTS[key].build(g,f);
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const v=g[r][c];
+    x.fillStyle=v==='wall'?'#475569':v==='floor'?'#d9b98c':((r+c)%2?'#86c06a':'#8fc873');
+    x.fillRect(c*sx,r*sy,sx+0.5,sy+0.5);
+  }
+  for(const o of f){
+    x.fillStyle={bed:'#60a5fa',sofa:'#f87171',tv:'#0f172a',fridge:'#e2e8f0',shower:'#67e8f9',
+      toilet:'#f8fafc',sink:'#bae6fd',bookshelf:'#b45309',table:'#a16207',counter:'#94a3b8',
+      dresser:'#92400e',lamp:'#fde047',plant:'#16a34a'}[o.type]||'#fff';
+    x.fillRect(o.c*sx+0.5,o.r*sy+0.5,o.w*sx-1,o.h*sy-1);
+  }
+}
+
+// =====================================================================
+// SIM FIGURE RENDERING (shared by creator preview, portraits & game)
+// =====================================================================
+// look = {skin,hairColor,hairStyle,outfit,gender} (indices into the palettes)
+// Draws a little chibi sim with its FEET at (x,y). s = scale.
+function drawSimFigure(ctx,x,y,look,s,opt){
+  s=s||1; opt=opt||{};
+  const skin=SKINS[look.skin], hc=HAIRCOLORS[look.hairColor], oc=OUTFITS[look.outfit];
+  const st=HAIRSTYLES[look.hairStyle].id;
+  const bob=opt.phase?Math.sin(opt.phase)*1.5:0;
+  const lo=opt.phase?Math.sin(opt.phase)*2.0:0;
+  ctx.save(); ctx.translate(x,y);
+  if(!opt.noShadow){ ctx.fillStyle='rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(0,0,8*s,3*s,0,0,7); ctx.fill(); }
+  // legs
+  ctx.fillStyle='#3b3b4f';
+  ctx.fillRect(-4.6*s,(-7-lo)*s,3.1*s,(7+lo)*s);
+  ctx.fillRect( 1.5*s,(-7+lo)*s,3.1*s,(7-lo)*s);
+  ctx.translate(0,bob*s);
+  // arms
+  ctx.fillStyle=skin;
+  ctx.fillRect(-8.3*s,-19*s,2.7*s,9.5*s);
+  ctx.fillRect( 5.6*s,-19*s,2.7*s,9.5*s);
+  // body (dress flare for female)
+  ctx.fillStyle=oc;
+  ctx.beginPath();
+  if(look.gender==='female'){
+    ctx.moveTo(-5.2*s,-21*s); ctx.lineTo(5.2*s,-21*s); ctx.lineTo(7.6*s,-5.5*s); ctx.lineTo(-7.6*s,-5.5*s);
+  }else{
+    ctx.moveTo(-6*s,-21*s); ctx.lineTo(6*s,-21*s); ctx.lineTo(6*s,-5.5*s); ctx.lineTo(-6*s,-5.5*s);
+  }
+  ctx.closePath(); ctx.fill();
+  // collar shading
+  ctx.fillStyle='rgba(0,0,0,.13)'; ctx.fillRect(-5*s,-21*s,10*s,2.2*s);
+  // hair behind head
+  if(st==='long'){ ctx.fillStyle=hc; ctx.beginPath(); ctx.arc(0,-27.5*s,8.4*s,0,7); ctx.fill();
+    ctx.fillRect(-8.2*s,-28*s,3.6*s,12.5*s); ctx.fillRect(4.6*s,-28*s,3.6*s,12.5*s); }
+  if(st==='pony'){ ctx.fillStyle=hc; ctx.beginPath(); ctx.arc(0,-36.5*s,3.7*s,0,7); ctx.fill();
+    ctx.fillRect(-1.6*s,-36*s,3.2*s,6*s); }
+  // head
+  ctx.fillStyle=skin; ctx.beginPath(); ctx.arc(0,-27.5*s,7.3*s,0,7); ctx.fill();
+  // hair front
+  ctx.fillStyle=hc;
+  if(st==='short'||st==='long'||st==='pony'||st==='buns'){
+    ctx.beginPath(); ctx.arc(0,-27.5*s,7.5*s,Math.PI*1.02,Math.PI*1.98); ctx.fill();
+    ctx.fillRect(-7.4*s,-29*s,2.4*s,4.5*s); ctx.fillRect(5*s,-29*s,2.4*s,4.5*s);
+  }
+  if(st==='mohawk'){ ctx.fillRect(-1.9*s,-37.5*s,3.8*s,11*s); }
+  if(st==='buns'){ ctx.beginPath(); ctx.arc(-6.6*s,-35*s,3.2*s,0,7); ctx.arc(6.6*s,-35*s,3.2*s,0,7); ctx.fill(); }
+  // face
+  ctx.fillStyle='#1e293b';
+  if(opt.sleeping){
+    ctx.fillRect(-3.7*s,-28*s,2.4*s,0.9*s); ctx.fillRect(1.3*s,-28*s,2.4*s,0.9*s);
+  }else{
+    ctx.beginPath(); ctx.arc(-2.6*s,-28*s,1.05*s,0,7); ctx.arc(2.6*s,-28*s,1.05*s,0,7); ctx.fill();
+  }
+  ctx.strokeStyle='#9a3412'; ctx.lineWidth=Math.max(1,0.9*s); ctx.beginPath();
+  const mouth=opt.mouth||'smile';
+  if(mouth==='smile') ctx.arc(0,-25.2*s,2.1*s,0.25*Math.PI,0.75*Math.PI);
+  else if(mouth==='flat'){ ctx.moveTo(-1.8*s,-24.4*s); ctx.lineTo(1.8*s,-24.4*s); }
+  else ctx.arc(0,-22.6*s,2.1*s,1.25*Math.PI,1.75*Math.PI);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawPlumbob(ctx,x,y,s,t){
+  const w=5.5*s*(0.35+0.65*Math.abs(Math.sin(t*2.2)));
+  const g=ctx.createLinearGradient(x,y-8*s,x,y+8*s);
+  g.addColorStop(0,'#86efac'); g.addColorStop(1,'#15803d');
+  ctx.fillStyle=g; ctx.beginPath();
+  ctx.moveTo(x,y-8*s); ctx.lineTo(x+w,y); ctx.lineTo(x,y+8*s); ctx.lineTo(x-w,y); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.65)'; ctx.lineWidth=1; ctx.stroke();
+}
+function drawSimPortrait(cv,look){
+  const x=cv.getContext('2d'); x.clearRect(0,0,cv.width,cv.height);
+  const g=x.createLinearGradient(0,0,0,cv.height);
+  g.addColorStop(0,'#334155'); g.addColorStop(1,'#0f172a');
+  x.fillStyle=g; x.fillRect(0,0,cv.width,cv.height);
+  drawSimFigure(x,cv.width/2,cv.height-5,look,cv.height/45,{mouth:'smile'});
+}
+
+// =====================================================================
+// SIM CREATOR
+// =====================================================================
+const creator={name:'',gender:'female',skin:1,hairColor:0,hairStyle:0,outfit:5,traits:new Set()};
+let casSims=[];   // household drafts before moving in
+
+function el(tag,cls,html){ const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; }
+
+function buildCreatorUI(){
+  const mkSwatches=(rowId,colors,key)=>{
+    const row=$(rowId); row.innerHTML='';
+    colors.forEach((col,i)=>{
+      const b=el('button','swatch'); b.style.background=col; b.dataset.i=i;
+      b.onclick=()=>{ creator[key]=i; refreshCreatorUI(); };
+      row.appendChild(b);
+    });
+  };
+  mkSwatches('skinRow',SKINS,'skin');
+  mkSwatches('hairColorRow',HAIRCOLORS,'hairColor');
+  mkSwatches('outfitRow',OUTFITS,'outfit');
+  const hs=$('hairStyleRow'); hs.innerHTML='';
+  HAIRSTYLES.forEach((h,i)=>{
+    const b=el('button','chip',h.name); b.dataset.i=i;
+    b.onclick=()=>{ creator.hairStyle=i; refreshCreatorUI(); };
+    hs.appendChild(b);
+  });
+  const tg=$('traitsGrid'); tg.innerHTML='';
+  for(const key of Object.keys(TRAITS)){
+    const t=TRAITS[key];
+    const b=el('button','trait-btn',`<span>${t.emoji}</span><span>${t.name}</span>`);
+    b.title=t.blurb; b.dataset.trait=key;
+    b.onclick=()=>{
+      if(creator.traits.has(key)) creator.traits.delete(key);
+      else if(creator.traits.size<3) creator.traits.add(key);
+      refreshCreatorUI();
+    };
+    tg.appendChild(b);
+  }
+  $('genderRow').querySelectorAll('.chip').forEach(b=>{
+    b.onclick=()=>{ creator.gender=b.dataset.g; refreshCreatorUI(); };
+  });
+  $('simName').addEventListener('input',e=>{ creator.name=e.target.value; });
+  $('btnRandName').onclick=()=>{
+    creator.name=choice(creator.gender==='female'?NAMES_F:NAMES_M);
+    $('simName').value=creator.name;
+  };
+  $('btnAddSim').onclick=addSimToHousehold;
+  $('btnMoveIn').onclick=tryMoveIn;
+  $('btnCreatorBack').onclick=()=>showScreen('map');
+}
+
+function refreshCreatorUI(){
+  const selIn=(rowId,i)=>$(rowId).querySelectorAll('.swatch,.chip').forEach(b=>b.classList.toggle('sel',+b.dataset.i===i));
+  selIn('skinRow',creator.skin); selIn('hairColorRow',creator.hairColor);
+  selIn('outfitRow',creator.outfit); selIn('hairStyleRow',creator.hairStyle);
+  $('genderRow').querySelectorAll('.chip').forEach(b=>b.classList.toggle('sel',b.dataset.g===creator.gender));
+  $('traitsGrid').querySelectorAll('.trait-btn').forEach(b=>{
+    const on=creator.traits.has(b.dataset.trait);
+    b.classList.toggle('sel',on);
+    b.classList.toggle('dis',!on&&creator.traits.size>=3);
+  });
+  $('traitCount').textContent=creator.traits.size;
+  $('houseCount').textContent=casSims.length;
+  $('btnMoveIn').disabled=casSims.length===0;
+  renderCreatorPreview();
+}
+
+function renderCreatorPreview(){
+  const cv=$('previewCanvas'), x=cv.getContext('2d');
+  x.clearRect(0,0,cv.width,cv.height);
+  x.fillStyle='rgba(22,101,52,.18)'; x.beginPath(); x.ellipse(115,262,62,14,0,0,7); x.fill();
+  drawSimFigure(x,115,262,creator,5.6,{mouth:'smile'});
+  drawPlumbob(x,115,32,2.2,performance.now()/1000);
+  x.fillStyle='#0f172a'; x.font='800 17px Segoe UI'; x.textAlign='center';
+  x.fillText(creator.name||'…',115,285);
+}
+
+function addSimToHousehold(){
+  const name=(creator.name||'').trim();
+  if(!name){ $('creatorMsg').textContent='Give your Sim a name first!'; return; }
+  if(creator.traits.size!==3){ $('creatorMsg').textContent='Pick exactly 3 personality traits.'; return; }
+  if(casSims.some(s=>s.name.toLowerCase()===name.toLowerCase())){
+    $('creatorMsg').textContent='Two Sims can\'t share a name.'; return;
+  }
+  $('creatorMsg').textContent='';
+  casSims.push({id:uid(),name,gender:creator.gender,skin:creator.skin,hairColor:creator.hairColor,
+    hairStyle:creator.hairStyle,outfit:creator.outfit,traits:[...creator.traits]});
+  randomizeCreatorLook();
+  refreshHouseholdList(); refreshCreatorUI();
+}
+
+function refreshHouseholdList(){
+  const list=$('householdList'); list.innerHTML='';
+  casSims.forEach((s,idx)=>{
+    const item=el('div','house-item');
+    const cv=document.createElement('canvas'); cv.width=40; cv.height=46;
+    item.appendChild(cv);
+    const info=el('div','hi-info',
+      `<div class="hi-name">${s.gender==='female'?'♀':'♂'} ${s.name}</div>
+       <div class="hi-traits">${s.traits.map(t=>TRAITS[t].emoji+' '+TRAITS[t].name).join(' · ')}</div>`);
+    item.appendChild(info);
+    const edit=el('button','mini-btn','✏️'); edit.title='Edit (loads back into the editor)';
+    edit.onclick=()=>{
+      creator.name=s.name; creator.gender=s.gender; creator.skin=s.skin; creator.hairColor=s.hairColor;
+      creator.hairStyle=s.hairStyle; creator.outfit=s.outfit; creator.traits=new Set(s.traits);
+      $('simName').value=s.name;
+      casSims.splice(idx,1);
+      refreshHouseholdList(); refreshCreatorUI();
+    };
+    const del=el('button','mini-btn red','✖'); del.title='Remove';
+    del.onclick=()=>{ casSims.splice(idx,1); refreshHouseholdList(); refreshCreatorUI(); };
+    item.appendChild(edit); item.appendChild(del);
+    list.appendChild(item);
+    drawSimPortrait(cv,s);
+  });
+}
+
+function randomizeCreatorLook(){
+  creator.name=''; $('simName').value='';
+  creator.gender=Math.random()<0.5?'female':'male';
+  creator.skin=irnd(0,SKINS.length-1);
+  creator.hairColor=irnd(0,HAIRCOLORS.length-1);
+  creator.hairStyle=irnd(0,HAIRSTYLES.length-1);
+  creator.outfit=irnd(0,OUTFITS.length-1);
+  creator.traits=new Set();
+}
+
+function resetCreator(fullReset){
+  if(fullReset) casSims=[];
+  randomizeCreatorLook();
+  refreshHouseholdList(); refreshCreatorUI();
+}
+
+function tryMoveIn(){
+  if(casSims.length===0){ $('creatorMsg').textContent='Add at least one Sim to your household.'; return; }
+  startGame();
+}
+
+// =====================================================================
+// WORLD MODEL: occupancy, walkability, pathfinding (BFS)
+// =====================================================================
+const inB=(c,r)=>c>=0&&c<COLS&&r>=0&&r<ROWS;
+function rebuildOcc(){
+  G.occ=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  for(const o of G.furniture)
+    for(let r=o.r;r<o.r+o.h;r++)for(let c=o.c;c<o.c+o.w;c++)
+      if(inB(c,r)) G.occ[r][c]=o;
+}
+const furnAt=(c,r)=>inB(c,r)?G.occ[r][c]:null;
+const cellWalkable=(c,r)=>inB(c,r)&&G.grid[r][c]!=='wall'&&!G.occ[r][c];
+
+// BFS path. Start cell is always allowed (sim may stand on furniture).
+// Returns array of cells (excluding start) or null.
+function findPath(c0,r0,c1,r1){
+  if(!inB(c1,r1)||!cellWalkable(c1,r1)) return null;
+  if(c0===c1&&r0===r1) return [];
+  const prev=new Map(), Q=[[c0,r0]], seen=new Set([c0+','+r0]);
+  const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+  while(Q.length){
+    const [c,r]=Q.shift();
+    for(const d of DIRS){
+      const nc=c+d[0], nr=r+d[1], k=nc+','+nr;
+      if(seen.has(k)||!cellWalkable(nc,nr)) continue;
+      seen.add(k); prev.set(k,c+','+r);
+      if(nc===c1&&nr===r1){
+        const out=[]; let cur=k;
+        while(cur!==c0+','+r0){ const [pc,pr]=cur.split(',').map(Number); out.push({c:pc,r:pr}); cur=prev.get(cur); }
+        return out.reverse();
+      }
+      Q.push([nc,nr]);
+    }
+  }
+  return null;
+}
+const cellOfSim=s=>({c:clamp(Math.floor(s.x/TILE),0,COLS-1), r:clamp(Math.floor(s.y/TILE),0,ROWS-1)});
+const standPos=(c,r)=>({x:(c+0.5)*TILE, y:(r+0.8)*TILE});
+
+// where a sim's feet go while *using* an object
+function usePos(o){
+  const d=FURN[o.type];
+  if(d.use==='on'){
+    if(o.type==='bed') return {x:(o.c+0.5)*TILE, y:(o.r+1.72)*TILE};
+    return {x:(o.c+o.w/2)*TILE, y:(o.r+0.92)*TILE};
+  }
+  const spots=frontSpots(o);
+  const s=spots.find(p=>cellWalkable(p.c,p.r))||spots[0];
+  return standPos(s.c,s.r);
+}
+function frontSpots(o){
+  const out=[];
+  for(let i=0;i<o.w;i++) out.push({c:o.c+i,r:o.r+o.h});
+  return out;
+}
+// candidate cells a sim can walk to in order to use the object
+function approachCells(o){
+  const d=FURN[o.type], out=[];
+  if(d.use==='front'){
+    for(const p of frontSpots(o)) if(cellWalkable(p.c,p.r)) out.push(p);
+    return out;
+  }
+  for(let r=o.r;r<o.r+o.h;r++)for(let c=o.c;c<o.c+o.w;c++){
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(dd=>{
+      const nc=c+dd[0],nr=r+dd[1];
+      if(cellWalkable(nc,nr)&&!out.some(p=>p.c===nc&&p.r===nr)) out.push({c:nc,r:nr});
+    });
+  }
+  return out;
+}
+
+// =====================================================================
+// SIMS: factory, trait modifiers, relationships
+// =====================================================================
+function makeSim(d,c,r){
+  const sim={
+    id:d.id, name:d.name, gender:d.gender, skin:d.skin, hairColor:d.hairColor,
+    hairStyle:d.hairStyle, outfit:d.outfit, traits:d.traits.slice(),
+    x:(c+0.5)*TILE, y:(r+0.8)*TILE,
+    needs:{}, path:null, action:null,
+    facing:1, walkPhase:0, moving:false,
+    aiWait:rnd(2,5),           // game-minutes until next autonomy think
+    bubble:null, bubbleT:0,    // emoji bubble above head
+    decayMul:{}, weight:{}, speedMul:1, eatBonus:1, bookBonus:1, moodPenalty:0, grumpy:false,
+  };
+  NEEDS.forEach(n=>{ sim.needs[n]=rnd(60,85); sim.decayMul[n]=1; sim.weight[n]=1; });
+  for(const tk of sim.traits){
+    const t=TRAITS[tk];
+    if(t.decay) for(const n in t.decay) sim.decayMul[n]*=t.decay[n];
+    if(t.weight) for(const n in t.weight) sim.weight[n]*=t.weight[n];
+    if(t.speed) sim.speedMul*=t.speed;
+    if(t.eatBonus) sim.eatBonus*=t.eatBonus;
+    if(t.bookBonus) sim.bookBonus*=t.bookBonus;
+    if(t.moodPenalty) sim.moodPenalty+=t.moodPenalty;
+    if(t.argue) sim.grumpy=true;
+  }
+  return sim;
+}
+const relKey=(a,b)=>{ const lo=Math.min(a,b),hi=Math.max(a,b); return lo+'|'+hi; };
+function getRel(a,b){ const k=relKey(a,b); if(!(k in G.rel)) G.rel[k]=25; return G.rel[k]; }
+function addRel(a,b,d){ const k=relKey(a,b); G.rel[k]=clamp(getRel(a,b)+d,0,100); }
+const simById=id=>G.household.find(s=>s.id===id);
+
+function setBubble(sim,icon,secs){ sim.bubble=icon; sim.bubbleT=secs||2.5; }
+
+function simMood(sim){
+  let avg=0; NEEDS.forEach(n=>avg+=sim.needs[n]); avg=avg/5-sim.moodPenalty;
+  if(avg>=72) return {label:'Great',emoji:'😄',color:'#4ade80',mouth:'smile'};
+  if(avg>=52) return {label:'Good',emoji:'🙂',color:'#a3e635',mouth:'smile'};
+  if(avg>=32) return {label:'Uncomfortable',emoji:'😕',color:'#fbbf24',mouth:'flat'};
+  return {label:'Critical',emoji:'😫',color:'#f87171',mouth:'frown'};
+}
+
+// =====================================================================
+// GAME START
+// =====================================================================
+function spawnSpots(n){
+  const out=[], r=ROWS-2, mid=Math.floor(COLS/2);
+  for(let k=0;k<COLS*2&&out.length<n;k++){
+    const c=mid+(k%2?1:-1)*Math.ceil(k/2);
+    if(cellWalkable(c,r)) out.push({c,r});
+  }
+  for(let rr=ROWS-1;rr>=0&&out.length<n;rr--)
+    for(let cc=0;cc<COLS&&out.length<n;cc++)
+      if(cellWalkable(cc,rr)&&!out.some(o=>o.c===cc&&o.r===rr)) out.push({c:cc,r:rr});
+  return out;
+}
+
+function startGame(){
+  G.grid=blankGrid(); G.furniture=[];
+  if(G.lot&&G.lot.layout!=='empty') LAYOUTS[G.lot.layout].build(G.grid,G.furniture);
+  G.funds=20000-(G.lot?G.lot.price:0);
+  rebuildOcc();
+  G.rel={}; G.household=[];
+  const spots=spawnSpots(casSims.length);
+  casSims.forEach((d,i)=>{
+    const sp=spots[i]||spots[0]||{c:1,r:1};
+    G.household.push(makeSim(d,sp.c,sp.r));
+  });
+  for(let i=0;i<G.household.length;i++)
+    for(let j=i+1;j<G.household.length;j++)
+      G.rel[relKey(G.household[i].id,G.household[j].id)]=25;
+  G.selectedSim=G.household[0];
+  G.time={min:8*60, day:1, speed:1, prevSpeed:1};
+  if(G.build.active) toggleBuildMode(false);
+  G.build.tool=null; G.build.item=null;
+  buildNeedRows(); buildPortraitBar(); refreshPortraitBar(); updateHUD(true);
+  closeCtxMenu(); $('relPanel').classList.add('hidden'); G.relOpen=false;
+  setSpeed(1);
+  showScreen('game');
+  G.household.forEach(s=>setBubble(s,'👋',3));
+}
+
+// =====================================================================
+// ACTIONS: object use, walking, social — plus the autonomy AI
+// =====================================================================
+const PROTECTED_USE=['bed','shower','toilet'];
+function protectedBusy(s){
+  return s.action&&s.action.kind==='use'&&s.action.phase==='doing'&&PROTECTED_USE.includes(s.action.obj.type);
+}
+function inSocial(s){ return s.action&&s.action.kind==='social'; }
+
+function cancelAction(sim){
+  const a=sim.action;
+  if(a){
+    if(a.kind==='use'&&a.obj.user===sim.id) a.obj.user=null;
+    if(a.kind==='social'){
+      const other=simById(a.withId);
+      if(other&&other.action&&other.action.kind==='social'&&other.action.withId===sim.id){
+        other.action=null; other.bubble=null;
+      }
+    }
+  }
+  sim.action=null; sim.path=null; sim.bubble=null;
+}
+
+function stepOff(sim){
+  const cell=cellOfSim(sim);
+  if(!furnAt(cell.c,cell.r)) return;
+  const opts=[[0,1],[1,0],[-1,0],[0,-1]].map(d=>({c:cell.c+d[0],r:cell.r+d[1]})).filter(p=>cellWalkable(p.c,p.r));
+  if(opts.length){ sim.path=[opts[0]]; sim.action={kind:'walk',player:false}; }
+}
+
+function endAction(sim){
+  const a=sim.action;
+  if(a&&a.kind==='use'&&a.obj.user===sim.id) a.obj.user=null;
+  sim.action=null; sim.bubble=null; sim.aiWait=rnd(1,3);
+  stepOff(sim);
+}
+
+function commandUse(sim,obj,player){
+  const d=FURN[obj.type];
+  if(!d.use){ return false; }
+  if(obj.user&&obj.user!==sim.id){
+    if(player) toast(FURN[obj.type].name+' is already in use!');
+    setBubble(sim,'❗',2); return false;
+  }
+  cancelAction(sim);
+  const start=cellOfSim(sim);
+  const cands=approachCells(obj).sort((p,q)=>
+    (Math.abs(p.c-start.c)+Math.abs(p.r-start.r))-(Math.abs(q.c-start.c)+Math.abs(q.r-start.r)));
+  let path=null;
+  for(let i=0;i<Math.min(cands.length,8);i++){
+    path=findPath(start.c,start.r,cands[i].c,cands[i].r);
+    if(path) break;
+  }
+  if(!path){ if(player) toast(sim.name+" can't reach that!"); setBubble(sim,'❗',2.5); return false; }
+  obj.user=sim.id;
+  sim.action={kind:'use',obj,phase:'walk',player:!!player,elapsed:0};
+  if(path.length===0){ sim.path=null; onArrive(sim); } else sim.path=path;
+  return true;
+}
+
+function commandWalk(sim,c,r,player){
+  cancelAction(sim);
+  const start=cellOfSim(sim);
+  const path=findPath(start.c,start.r,c,r);
+  if(!path){ if(player){ toast("Can't walk there!"); setBubble(sim,'❗',2);} return false; }
+  sim.action={kind:'walk',player:!!player};
+  if(path.length===0){ sim.action=null; return true; }
+  sim.path=path; return true;
+}
+
+function commandSocial(sim,other,mode,player){
+  if(!other||other===sim) return false;
+  if(inSocial(other)||protectedBusy(other)){
+    if(player) toast(other.name+' is busy right now.');
+    setBubble(sim,'❗',2); return false;
+  }
+  cancelAction(sim);
+  cancelAction(other);
+  other.action={kind:'social',mode,withId:sim.id,role:'recv',phase:'wait',timeout:30};
+  const start=cellOfSim(sim), oc=cellOfSim(other);
+  const cands=[[0,1],[1,0],[-1,0],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]]
+    .map(d=>({c:oc.c+d[0],r:oc.r+d[1]})).filter(p=>cellWalkable(p.c,p.r))
+    .sort((p,q)=>(Math.abs(p.c-start.c)+Math.abs(p.r-start.r))-(Math.abs(q.c-start.c)+Math.abs(q.r-start.r)));
+  let path=null;
+  for(const cand of cands){ path=findPath(start.c,start.r,cand.c,cand.r); if(path) break; }
+  if(!path&&dist2(sim.x,sim.y,other.x,other.y)>1.9*TILE){
+    other.action=null;
+    if(player) toast(sim.name+" can't reach "+other.name+'!');
+    setBubble(sim,'❗',2.5); return false;
+  }
+  sim.action={kind:'social',mode,withId:other.id,role:'init',phase:'walk',retries:2,player:!!player};
+  if(!path||path.length===0){ sim.path=null; onArrive(sim); } else sim.path=path;
+  return true;
+}
+
+function startSocialDoing(a,b,mode){
+  const dur=mode==='talk'?9:mode==='joke'?7:6;
+  a.action={kind:'social',mode,withId:b.id,role:'init',phase:'doing',remain:dur};
+  b.action={kind:'social',mode,withId:a.id,role:'recv',phase:'doing',remain:dur};
+  a.facing=b.x>=a.x?1:-1; b.facing=a.x>=b.x?1:-1;
+  a.path=null; b.path=null;
+}
+
+function onArrive(sim){
+  const a=sim.action;
+  if(!a) return;
+  if(a.kind==='walk'){ sim.action=null; return; }
+  if(a.kind==='use'){
+    a.phase='glide'; a.glide=usePos(a.obj);
+    return;
+  }
+  if(a.kind==='social'&&a.role==='init'){
+    const other=simById(a.withId);
+    if(!other||!other.action||other.action.kind!=='social'||other.action.withId!==sim.id){ sim.action=null; return; }
+    if(dist2(sim.x,sim.y,other.x,other.y)<=2.1*TILE){ startSocialDoing(sim,other,a.mode); return; }
+    if(a.retries>0){
+      a.retries--;
+      const start=cellOfSim(sim), oc=cellOfSim(other);
+      const cands=[[0,1],[1,0],[-1,0],[0,-1]].map(d=>({c:oc.c+d[0],r:oc.r+d[1]})).filter(p=>cellWalkable(p.c,p.r));
+      for(const cand of cands){ const p=findPath(start.c,start.r,cand.c,cand.r); if(p){ sim.path=p; return; } }
+    }
+    other.action=null; sim.action=null; setBubble(sim,'❗',2);
+  }
+}
+
+function finishSocial(a,b,mode){
+  if(mode==='talk'){ addRel(a.id,b.id,6); setBubble(a,'🙂',2); setBubble(b,'🙂',2); }
+  else if(mode==='joke'){
+    if(b.grumpy&&Math.random()<0.35){ addRel(a.id,b.id,-6); setBubble(b,'😒',2.5); setBubble(a,'😅',2.5); }
+    else { addRel(a.id,b.id,10); setBubble(a,'😄',2); setBubble(b,'😄',2); }
+  }else{ addRel(a.id,b.id,-12); setBubble(a,'😤',2.5); setBubble(b,'😢',2.5); }
+  a.action=null; b.action=null; a.aiWait=rnd(2,5); b.aiWait=rnd(2,5);
+}
+
+// ---------- per-frame sim update ----------
+function simTick(sim,dtMin,dtReal){
+  // need decay
+  for(const n of NEEDS) sim.needs[n]=clamp(sim.needs[n]-NEED_META[n].decay*sim.decayMul[n]*dtMin,0,100);
+  if(sim.bubbleT>0){ sim.bubbleT-=dtReal; if(sim.bubbleT<=0) sim.bubble=null; }
+  const a=sim.action;
+  if(a&&a.kind==='use'&&a.phase==='doing'){
+    a.elapsed+=dtMin;
+    const d=FURN[a.obj.type];
+    let primary=null;
+    for(const n in d.restores){
+      if(!primary) primary=n;
+      let rate=d.restores[n];
+      if(a.obj.type==='fridge') rate*=sim.eatBonus;
+      if(a.obj.type==='bookshelf'&&n==='fun') rate*=sim.bookBonus;
+      sim.needs[n]=clamp(sim.needs[n]+rate*dtMin,0,100);
+    }
+    if(sim.needs[primary]>=99.5||(d.maxMin&&a.elapsed>=d.maxMin)) endAction(sim);
+  }
+  else if(a&&a.kind==='social'){
+    if(a.phase==='wait'){ a.timeout-=dtMin; if(a.timeout<=0){ sim.action=null; } }
+    else if(a.phase==='doing'&&a.role==='init'){
+      const other=simById(a.withId);
+      if(!other||!other.action||other.action.kind!=='social'){ sim.action=null; return; }
+      a.remain-=dtMin;
+      const m=a.mode;
+      if(m==='talk'){ sim.needs.social=clamp(sim.needs.social+2.6*dtMin,0,100); other.needs.social=clamp(other.needs.social+2.6*dtMin,0,100); }
+      else if(m==='joke'){
+        sim.needs.social=clamp(sim.needs.social+2.2*dtMin,0,100); other.needs.social=clamp(other.needs.social+2.2*dtMin,0,100);
+        sim.needs.fun=clamp(sim.needs.fun+1.6*dtMin,0,100); other.needs.fun=clamp(other.needs.fun+1.9*dtMin,0,100);
+      }else{
+        sim.needs.social=clamp(sim.needs.social+1.8*dtMin,0,100);
+        other.needs.social=clamp(other.needs.social-1.2*dtMin,0,100);
+        other.needs.fun=clamp(other.needs.fun-1.2*dtMin,0,100);
+      }
+      if(a.remain<=0) finishSocial(sim,other,m);
+    }
+  }
+  moveSim(sim,dtReal);
+  if(!sim.action&&G.time.speed>0){
+    sim.aiWait-=dtMin;
+    if(sim.aiWait<=0){ sim.aiWait=rnd(2.5,6); decideAutonomy(sim); }
+  }
+}
+
+function moveSim(sim,dtReal){
+  const step=80*sim.speedMul*G.time.speed*dtReal;
+  const a=sim.action;
+  if(a&&a.kind==='use'&&a.phase==='glide'){
+    const t=a.glide, d=dist2(sim.x,sim.y,t.x,t.y);
+    if(d<=step||d<1){ sim.x=t.x; sim.y=t.y; a.phase='doing'; a.elapsed=0; sim.moving=false; }
+    else{ sim.facing=t.x>=sim.x?1:-1; sim.x+=(t.x-sim.x)/d*step; sim.y+=(t.y-sim.y)/d*step; sim.walkPhase+=step*0.2; sim.moving=true; }
+    return;
+  }
+  if(!sim.path||!sim.path.length){ sim.moving=false; return; }
+  const next=sim.path[0], t=standPos(next.c,next.r), d=dist2(sim.x,sim.y,t.x,t.y);
+  if(d<=step||d<0.8){
+    sim.x=t.x; sim.y=t.y; sim.path.shift();
+    if(!sim.path.length){ sim.path=null; sim.moving=false; onArrive(sim); }
+  }else{
+    sim.facing=t.x>=sim.x?1:-1;
+    sim.x+=(t.x-sim.x)/d*step; sim.y+=(t.y-sim.y)/d*step;
+    sim.walkPhase+=step*0.2; sim.moving=true;
+  }
+}
+
+// ---------- autonomy ----------
+function freeObjectsRestoring(need){
+  return G.furniture.filter(o=>{
+    const d=FURN[o.type];
+    return d.use&&d.restores&&d.restores[need]&&!o.user;
+  });
+}
+function decideAutonomy(sim){
+  let best=null;
+  for(const n of NEEDS){
+    const v=sim.needs[n];
+    if(v>=66) continue;
+    const urg=(74-v)*sim.weight[n];
+    if(n==='social'){
+      const others=G.household.filter(o=>o!==sim&&!inSocial(o)&&!protectedBusy(o)&&(!o.action||o.action.kind==='walk'||o.action.kind==='use'));
+      if(!others.length) continue;
+      others.sort((p,q)=>dist2(sim.x,sim.y,p.x,p.y)-dist2(sim.x,sim.y,q.x,q.y));
+      const other=others[0];
+      const score=urg-dist2(sim.x,sim.y,other.x,other.y)/TILE*0.5+rnd(0,8);
+      if(!best||score>best.score) best={score,go:()=>{
+        let mode='talk';
+        const r=Math.random();
+        if(sim.grumpy&&r<0.35) mode='argue';
+        else if(r<0.3) mode='joke';
+        commandSocial(sim,other,mode,false);
+      }};
+    }else{
+      const objs=freeObjectsRestoring(n);
+      for(const o of objs){
+        const oc={x:(o.c+o.w/2)*TILE,y:(o.r+o.h/2)*TILE};
+        let score=urg-dist2(sim.x,sim.y,oc.x,oc.y)/TILE*0.5+rnd(0,6);
+        if(o.type==='bookshelf'&&sim.bookBonus>1) score+=10;
+        if(o.type==='fridge'&&sim.eatBonus>1) score+=6;
+        if(!best||score>best.score) best={score,go:()=>commandUse(sim,o,false)};
+      }
+    }
+  }
+  if(best){ best.go(); return; }
+  // idle flavour
+  const r=Math.random();
+  if(sim.bookBonus>1&&sim.needs.fun<90&&r<0.25){
+    const shelf=freeObjectsRestoring('fun').find(o=>o.type==='bookshelf');
+    if(shelf){ commandUse(sim,shelf,false); return; }
+  }
+  if(sim.traits.includes('lazy')&&r<0.3){
+    const sofa=G.furniture.find(o=>o.type==='sofa'&&!o.user);
+    if(sofa){ commandUse(sim,sofa,false); return; }
+  }
+  if(r<0.45){
+    const cell=cellOfSim(sim);
+    for(let tries=0;tries<8;tries++){
+      const c=cell.c+irnd(-4,4), rr=cell.r+irnd(-4,4);
+      if(cellWalkable(c,rr)){ commandWalk(sim,c,rr,false); return; }
+    }
+  }
+}
+
+// =====================================================================
+// RENDERING: world, furniture, sims, night overlay, build ghosts
+// =====================================================================
+let gameCv,gctx,nightCv,nctx;
+
+function setupCanvases(){
+  gameCv=$('gameCanvas'); gctx=gameCv.getContext('2d');
+  nightCv=document.createElement('canvas'); nightCv.width=gameCv.width; nightCv.height=gameCv.height;
+  nctx=nightCv.getContext('2d');
+}
+
+function darknessLevel(){
+  const h=G.time.min/60; let d=0;
+  if(h>=19&&h<22) d=(h-19)/3;
+  else if(h>=22||h<5) d=1;
+  else if(h>=5&&h<7) d=1-(h-5)/2;
+  return d*0.62;
+}
+
+function render(t){
+  const x=gctx;
+  // ---- tiles ----
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const v=G.grid[r][c], px=c*TILE, py=r*TILE;
+    if(v==='grass'){
+      x.fillStyle=((r+c)%2)?'#74b356':'#7cbb5e'; x.fillRect(px,py,TILE,TILE);
+      if((r*31+c*17)%9<2){ x.fillStyle='#6aa84f'; x.fillRect(px+((c*13)%24)+4,py+((r*11)%24)+4,4,4); }
+    }else if(v==='floor'){
+      x.fillStyle='#dcbd90'; x.fillRect(px,py,TILE,TILE);
+      x.fillStyle='rgba(120,72,20,.13)';
+      x.fillRect(px,py+TILE-2,TILE,2);
+      if((r+c)%2) { x.fillStyle='rgba(255,255,255,.05)'; x.fillRect(px,py,TILE,TILE); }
+    }else{ // wall
+      x.fillStyle='#535d72'; x.fillRect(px,py,TILE,TILE);
+      x.fillStyle='#67738c'; x.fillRect(px+2,py+2,TILE-4,TILE-4);
+      x.fillStyle='rgba(255,255,255,.14)'; x.fillRect(px+2,py+2,TILE-4,4);
+    }
+  }
+  // wall drop shadows on the tile south of a wall
+  x.fillStyle='rgba(0,0,0,.14)';
+  for(let r=0;r<ROWS-1;r++)for(let c=0;c<COLS;c++)
+    if(G.grid[r][c]==='wall'&&G.grid[r+1][c]!=='wall') x.fillRect(c*TILE,(r+1)*TILE,TILE,6);
+  // lot border
+  x.strokeStyle='rgba(0,0,0,.25)'; x.lineWidth=3; x.strokeRect(1.5,1.5,COLS*TILE-3,ROWS*TILE-3);
+
+  // ---- furniture (painter's order) ----
+  const sorted=[...G.furniture].sort((a,b)=>(a.r+a.h)-(b.r+b.h));
+  for(const o of sorted) drawFurniture(x,o,t);
+
+  // ---- sims ----
+  const sims=[...G.household].sort((a,b)=>a.y-b.y);
+  for(const s of sims) drawSimGame(x,s,t);
+
+  // ---- night ----
+  const dark=darknessLevel();
+  if(dark>0.02){
+    nctx.clearRect(0,0,nightCv.width,nightCv.height);
+    nctx.fillStyle=`rgba(9,13,42,${dark})`; nctx.fillRect(0,0,nightCv.width,nightCv.height);
+    nctx.globalCompositeOperation='destination-out';
+    for(const o of G.furniture){
+      const d=FURN[o.type];
+      const lit=(o.type==='lamp')||(o.type==='tv'&&o.user);
+      if(!lit) continue;
+      const cx=(o.c+o.w/2)*TILE, cy=(o.r+o.h/2)*TILE;
+      const g=nctx.createRadialGradient(cx,cy,8,cx,cy,105);
+      g.addColorStop(0,'rgba(0,0,0,.95)'); g.addColorStop(1,'rgba(0,0,0,0)');
+      nctx.fillStyle=g; nctx.beginPath(); nctx.arc(cx,cy,105,0,7); nctx.fill();
+    }
+    nctx.globalCompositeOperation='source-over';
+    x.drawImage(nightCv,0,0);
+    for(const o of G.furniture){
+      if(o.type!=='lamp') continue;
+      const cx=(o.c+0.5)*TILE, cy=(o.r+0.5)*TILE;
+      x.fillStyle=`rgba(255,190,90,${0.12*dark/0.62})`;
+      x.beginPath(); x.arc(cx,cy,60,0,7); x.fill();
+    }
+  }
+
+  if(G.build.active) drawBuildOverlay(x);
+}
+
+// ---------- furniture painters ----------
+function drawFurniture(x,o,t){
+  const px=o.c*TILE, py=o.r*TILE, w=o.w*TILE, h=o.h*TILE;
+  x.save();
+  x.fillStyle='rgba(0,0,0,.16)'; roundRect(x,px+3,py+5,w-4,h-4,6); x.fill();
+  switch(o.type){
+    case 'bed':{
+      x.fillStyle='#8b5a2b'; roundRect(x,px+1,py+1,w-2,h-2,5); x.fill();
+      x.fillStyle='#f1f5f9'; roundRect(x,px+4,py+4,w-8,h-8,4); x.fill();
+      x.fillStyle='#ffffff'; roundRect(x,px+7,py+7,w-14,12,3); x.fill();
+      x.fillStyle='#3b82f6'; roundRect(x,px+4,py+24,w-8,h-28,4); x.fill();
+      x.fillStyle='rgba(255,255,255,.25)'; x.fillRect(px+4,py+26,w-8,3);
+      break;
+    }
+    case 'fridge':{
+      x.fillStyle='#cbd5e1'; roundRect(x,px+4,py+2,w-8,h-4,4); x.fill();
+      x.fillStyle='#e2e8f0'; roundRect(x,px+6,py+4,w-12,h-8,3); x.fill();
+      x.fillStyle='#94a3b8'; x.fillRect(px+6,py+14,w-12,2);
+      x.fillStyle='#475569'; x.fillRect(px+w-12,py+7,3,6); x.fillRect(px+w-12,py+18,3,8);
+      break;
+    }
+    case 'shower':{
+      x.fillStyle='#bae6fd'; roundRect(x,px+2,py+2,w-4,h-4,5); x.fill();
+      x.strokeStyle='#7dd3fc'; x.lineWidth=2; roundRect(x,px+4,py+4,w-8,h-8,4); x.stroke();
+      x.fillStyle='#64748b'; x.beginPath(); x.arc(px+9,py+9,4,0,7); x.fill();
+      if(o.user){
+        x.fillStyle='rgba(125,211,252,.85)';
+        for(let i=0;i<7;i++){ const sx=px+8+((i*7+Math.floor(t*9))%(w-16)), sy=py+8+((i*11+Math.floor(t*13))%(h-16)); x.fillRect(sx,sy,2,5); }
+      }
+      break;
+    }
+    case 'toilet':{
+      x.fillStyle='#e5e7eb'; roundRect(x,px+7,py+3,w-14,9,3); x.fill();
+      x.fillStyle='#f8fafc'; x.beginPath(); x.ellipse(px+w/2,py+21,10,11,0,0,7); x.fill();
+      x.strokeStyle='#cbd5e1'; x.lineWidth=2.5; x.beginPath(); x.ellipse(px+w/2,py+21,7,8,0,0,7); x.stroke();
+      break;
+    }
+    case 'sink':{
+      x.fillStyle='#e5e7eb'; roundRect(x,px+5,py+5,w-10,h-10,6); x.fill();
+      x.fillStyle='#bfdbfe'; x.beginPath(); x.arc(px+w/2,py+h/2+2,8,0,7); x.fill();
+      x.fillStyle='#64748b'; x.fillRect(px+w/2-1.5,py+6,3,7);
+      break;
+    }
+    case 'sofa':{
+      x.fillStyle='#0d9488'; roundRect(x,px+2,py+2,w-4,12,5); x.fill();           // backrest
+      x.fillStyle='#14b8a6'; roundRect(x,px+3,py+10,w-6,h-13,6); x.fill();         // seat
+      x.fillStyle='rgba(0,0,0,.15)'; x.fillRect(px+w/2-1,py+12,2,h-17);
+      x.fillStyle='#0f766e'; roundRect(x,px+1,py+8,7,h-11,4); x.fill(); roundRect(x,px+w-8,py+8,7,h-11,4); x.fill();
+      break;
+    }
+    case 'tv':{
+      x.fillStyle='#374151'; x.fillRect(px+w/2-10,py+h-8,20,5);
+      x.fillStyle='#111827'; roundRect(x,px+3,py+4,w-6,h-14,4); x.fill();
+      if(o.user){
+        const hue=(t*70)%360;
+        x.fillStyle=`hsl(${hue},75%,60%)`; x.fillRect(px+6,py+7,w-12,h-20);
+        x.fillStyle=`hsla(${(hue+120)%360},80%,65%,.7)`; x.fillRect(px+6,py+7,(w-12)/3,h-20);
+      }else{
+        x.fillStyle='#1b2540'; x.fillRect(px+6,py+7,w-12,h-20);
+        x.fillStyle='rgba(255,255,255,.08)'; x.beginPath();
+        x.moveTo(px+8,py+h-13); x.lineTo(px+20,py+7); x.lineTo(px+30,py+7); x.lineTo(px+16,py+h-13); x.closePath(); x.fill();
+      }
+      break;
+    }
+    case 'bookshelf':{
+      x.fillStyle='#92400e'; roundRect(x,px+2,py+1,w-4,h-2,3); x.fill();
+      for(let row=0;row<3;row++){
+        const by=py+5+row*10;
+        x.fillStyle='#713f12'; x.fillRect(px+5,by+8,w-10,2);
+        let bx=px+5;
+        for(let i=0;i<5&&bx<px+w-8;i++){
+          const bw=3+((o.id*7+row*5+i*3)%4);
+          x.fillStyle=OUTFITS[(o.id*3+row*2+i)%OUTFITS.length];
+          x.fillRect(bx,by,bw,8); bx+=bw+1.5;
+        }
+      }
+      break;
+    }
+    case 'lamp':{
+      x.fillStyle='#475569'; x.beginPath(); x.arc(px+TILE/2,py+TILE/2,5,0,7); x.fill();
+      x.fillStyle='rgba(251,191,36,.55)'; x.beginPath(); x.arc(px+TILE/2,py+TILE/2,12,0,7); x.fill();
+      x.fillStyle='#fde68a'; x.beginPath(); x.arc(px+TILE/2,py+TILE/2,8,0,7); x.fill();
+      break;
+    }
+    case 'plant':{
+      x.fillStyle='#b45309'; x.beginPath(); x.arc(px+TILE/2,py+TILE/2+5,7,0,7); x.fill();
+      x.fillStyle='#15803d'; x.beginPath(); x.arc(px+TILE/2-5,py+TILE/2-3,7,0,7); x.fill();
+      x.fillStyle='#16a34a'; x.beginPath(); x.arc(px+TILE/2+5,py+TILE/2-2,7,0,7); x.fill();
+      x.fillStyle='#22c55e'; x.beginPath(); x.arc(px+TILE/2,py+TILE/2-7,6,0,7); x.fill();
+      break;
+    }
+    case 'counter':{
+      x.fillStyle='#64748b'; roundRect(x,px+2,py+2,w-4,h-4,3); x.fill();
+      x.fillStyle='#94a3b8'; roundRect(x,px+3,py+3,w-6,10,3); x.fill();
+      x.fillStyle='#475569'; x.fillRect(px+6,py+18,8,3); x.fillRect(px+w-14,py+18,8,3);
+      break;
+    }
+    case 'table':{
+      x.fillStyle='#a16207'; x.beginPath(); x.arc(px+TILE/2,py+TILE/2,14,0,7); x.fill();
+      x.strokeStyle='#854d0e'; x.lineWidth=2.5; x.beginPath(); x.arc(px+TILE/2,py+TILE/2,10,0,7); x.stroke();
+      break;
+    }
+    case 'dresser':{
+      x.fillStyle='#92400e'; roundRect(x,px+3,py+5,w-6,h-10,3); x.fill();
+      x.fillStyle='#b45309'; x.fillRect(px+6,py+9,w-12,7); x.fillRect(px+6,py+19,w-12,7);
+      x.fillStyle='#fde68a'; x.fillRect(px+w/2-2,py+11,4,3); x.fillRect(px+w/2-2,py+21,4,3);
+      break;
+    }
+  }
+  x.restore();
+}
+
+// ---------- sims ----------
+function drawSimGame(x,sim,t){
+  const a=sim.action;
+  const sleeping=!!(a&&a.kind==='use'&&a.phase==='doing'&&a.obj.type==='bed');
+  const mood=simMood(sim);
+  if(sim===G.selectedSim){
+    x.strokeStyle='rgba(74,222,128,.85)'; x.lineWidth=2.5;
+    x.beginPath(); x.ellipse(sim.x,sim.y,11,4.5,0,0,7); x.stroke();
+  }
+  drawSimFigure(x,sim.x,sim.y,sim,1,{phase:sim.moving?sim.walkPhase:0,sleeping,mouth:mood.mouth});
+  x.font='700 10px Segoe UI'; x.textAlign='center';
+  x.fillStyle='rgba(0,0,0,.5)'; x.fillText(sim.name,sim.x+1,sim.y-45);
+  x.fillStyle=sim===G.selectedSim?'#bbf7d0':'#ffffff'; x.fillText(sim.name,sim.x,sim.y-46);
+  if(sim===G.selectedSim) drawPlumbob(x,sim.x,sim.y-60,1.05,t);
+  let icon=sim.bubble;
+  if(!icon&&a){
+    if(a.kind==='use'&&a.phase==='doing') icon=FURN[a.obj.type].busyIcon;
+    else if(a.kind==='social'&&a.phase==='doing') icon=a.mode==='talk'?'💬':a.mode==='joke'?'😂':'💢';
+    else if(a.kind==='social'&&a.phase==='wait') icon='⏳';
+  }
+  if(icon){
+    const bx=sim.x+15, by=sim.y-52+Math.sin(t*2.4)*1.5;
+    x.fillStyle='rgba(255,255,255,.95)';
+    x.beginPath(); x.arc(bx,by,10,0,7); x.fill();
+    x.beginPath(); x.moveTo(bx-7,by+6); x.lineTo(bx-11,by+12); x.lineTo(bx-3,by+9); x.closePath(); x.fill();
+    x.font='12px Segoe UI'; x.textAlign='center'; x.textBaseline='middle';
+    x.fillText(icon,bx,by+1); x.textBaseline='alphabetic';
+  }
+  if(a&&a.kind==='use'&&a.phase==='doing'){
+    const d=FURN[a.obj.type], primary=Object.keys(d.restores)[0];
+    const frac=sim.needs[primary]/100;
+    x.fillStyle='rgba(0,0,0,.45)'; roundRect(x,sim.x-14,sim.y-41,28,5,2.5); x.fill();
+    x.fillStyle=NEED_META[primary].color; roundRect(x,sim.x-13,sim.y-40,26*frac,3,1.5); x.fill();
+  }
+}
+
+// ---------- build-mode overlay ----------
+function canPlaceItem(type,c,r){
+  const d=FURN[type];
+  for(let rr=r;rr<r+d.h;rr++)for(let cc=c;cc<c+d.w;cc++){
+    if(!inB(cc,rr)||G.grid[rr][cc]==='wall'||furnAt(cc,rr)) return false;
+    for(const s of G.household){ const sc=cellOfSim(s); if(sc.c===cc&&sc.r===rr) return false; }
+  }
+  return true;
+}
+function canPlaceWall(c,r){
+  if(!inB(c,r)||furnAt(c,r)) return false;
+  for(const s of G.household){ const sc=cellOfSim(s); if(sc.c===c&&sc.r===r) return false; }
+  return true;
+}
+function drawBuildOverlay(x){
+  x.strokeStyle='rgba(255,255,255,.10)'; x.lineWidth=1;
+  for(let c=0;c<=COLS;c++){ x.beginPath(); x.moveTo(c*TILE,0); x.lineTo(c*TILE,ROWS*TILE); x.stroke(); }
+  for(let r=0;r<=ROWS;r++){ x.beginPath(); x.moveTo(0,r*TILE); x.lineTo(COLS*TILE,r*TILE); x.stroke(); }
+  const hov=G.build.hover; if(!hov) return;
+  const B=G.build;
+  if(B.tool==='place'&&B.item){
+    const d=FURN[B.item];
+    const ok=canPlaceItem(B.item,hov.c,hov.r)&&G.funds>=d.price;
+    x.globalAlpha=0.7;
+    drawFurniture(x,{id:999,type:B.item,c:hov.c,r:hov.r,w:d.w,h:d.h,user:null},0);
+    x.globalAlpha=1;
+    x.fillStyle=ok?'rgba(34,197,94,.3)':'rgba(239,68,68,.4)';
+    x.fillRect(hov.c*TILE,hov.r*TILE,d.w*TILE,d.h*TILE);
+  }else if(B.tool==='wall'){
+    const ok=canPlaceWall(hov.c,hov.r)&&G.funds>=WALL_COST;
+    x.fillStyle=ok?'rgba(34,197,94,.35)':'rgba(239,68,68,.4)';
+    x.fillRect(hov.c*TILE,hov.r*TILE,TILE,TILE);
+  }else if(B.tool==='room'){
+    const s=B.roomStart||hov;
+    const c0=Math.min(s.c,hov.c), c1=Math.max(s.c,hov.c), r0=Math.min(s.r,hov.r), r1=Math.max(s.r,hov.r);
+    x.fillStyle='rgba(56,189,248,.22)'; x.fillRect(c0*TILE,r0*TILE,(c1-c0+1)*TILE,(r1-r0+1)*TILE);
+    x.strokeStyle='#38bdf8'; x.lineWidth=2.5; x.strokeRect(c0*TILE+1,r0*TILE+1,(c1-c0+1)*TILE-2,(r1-r0+1)*TILE-2);
+    if(B.roomStart){
+      const cost=roomCost(c0,r0,c1,r1);
+      x.fillStyle='#fff'; x.font='800 13px Segoe UI'; x.textAlign='center';
+      x.fillText(money(cost),(c0+c1+1)/2*TILE,r0*TILE-6);
+    }
+  }else if(B.tool==='delete'){
+    const o=furnAt(hov.c,hov.r);
+    if(o){ x.fillStyle='rgba(239,68,68,.45)'; x.fillRect(o.c*TILE,o.r*TILE,o.w*TILE,o.h*TILE); }
+    else if(G.grid[hov.r][hov.c]!=='grass'){ x.fillStyle='rgba(239,68,68,.35)'; x.fillRect(hov.c*TILE,hov.r*TILE,TILE,TILE); }
+  }
+}
+function roomCost(c0,r0,c1,r1){
+  let walls=0,floors=0;
+  for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){
+    if(r===r0||r===r1||c===c0||c===c1){ if(G.grid[r][c]!=='wall') walls++; }
+    else if(G.grid[r][c]==='grass') floors++;
+  }
+  return walls*WALL_COST+floors*FLOOR_COST;
+}
+
+// =====================================================================
+// HUD: toolbar, sim panel, portraits, relationships
+// =====================================================================
+function buildNeedRows(){
+  const box=$('spNeeds'); box.innerHTML='';
+  for(const n of NEEDS){
+    const m=NEED_META[n];
+    box.insertAdjacentHTML('beforeend',
+      `<div class="need-row"><div class="need-ico">${m.icon}</div><div class="need-label">${m.label}</div>`+
+      `<div class="need-track"><div class="need-fill" id="nf-${n}" style="background:${m.color};width:50%"></div></div>`+
+      `<div class="need-val" id="nv-${n}">50</div></div>`);
+  }
+}
+function buildPortraitBar(){
+  const bar=$('portraitBar'); bar.innerHTML='';
+  for(const s of G.household){
+    const b=el('button','portrait-btn'); b.id='pb-'+s.id; b.title=s.name;
+    const cv=document.createElement('canvas'); cv.width=44; cv.height=44;
+    b.appendChild(cv); drawSimPortrait(cv,s);
+    b.onclick=()=>{ G.selectedSim=s; refreshPortraitBar(); updateHUD(true); };
+    bar.appendChild(b);
+  }
+}
+function refreshPortraitBar(){
+  for(const s of G.household){
+    const b=$('pb-'+s.id); if(b) b.classList.toggle('sel',s===G.selectedSim);
+  }
+}
+function actionLabel(sim){
+  const a=sim.action;
+  if(!a) return 'Hanging around…';
+  if(a.kind==='walk') return 'Walking…';
+  if(a.kind==='use'){
+    const d=FURN[a.obj.type];
+    return a.phase==='doing'?d.verb+'…':'Heading to the '+d.name.toLowerCase()+'…';
+  }
+  if(a.kind==='social'){
+    const other=simById(a.withId), nm=other?other.name:'someone';
+    if(a.phase==='doing') return (a.mode==='talk'?'Chatting with ':a.mode==='joke'?'Joking with ':'Arguing with ')+nm+'…';
+    if(a.phase==='wait') return 'Waiting for '+nm+'…';
+    return 'Walking over to '+nm+'…';
+  }
+  return '';
+}
+let hudClock=0;
+function updateHUD(force){
+  const tm=G.time, hh=Math.floor(tm.min/60)%24, mm=Math.floor(tm.min%60);
+  $('tbClock').textContent=(darknessLevel()>0.25?'🌙 ':'☀️ ')+String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+  $('tbDay').textContent='Day '+tm.day;
+  $('tbFunds').textContent=money(G.funds);
+  const s=G.selectedSim; if(!s) return;
+  const mood=simMood(s);
+  $('spName').textContent=(s.gender==='female'?'♀ ':'♂ ')+s.name;
+  $('spTraits').textContent=s.traits.map(t=>TRAITS[t].emoji+' '+TRAITS[t].name).join('  ');
+  $('spMood').innerHTML=`<span style="color:${mood.color}">${mood.emoji} ${mood.label}</span>`;
+  $('spAction').textContent=actionLabel(s);
+  for(const n of NEEDS){
+    const v=s.needs[n];
+    $('nf-'+n).style.width=v+'%';
+    $('nf-'+n).style.filter=v<20?'saturate(2) brightness(1.2)':'';
+    $('nv-'+n).textContent=Math.round(v);
+  }
+  drawSimPortrait($('spPortrait'),s);
+  if(G.relOpen&&(force||true)) renderRelPanel();
+}
+function renderRelPanel(){
+  const s=G.selectedSim, box=$('relList');
+  if(!s){ box.innerHTML=''; return; }
+  const others=G.household.filter(o=>o!==s);
+  if(!others.length){ box.innerHTML='<div style="font-size:12px;color:#94a3b8">No other Sims in the household — go make friends in a bigger family!</div>'; return; }
+  box.innerHTML=others.map(o=>{
+    const v=Math.round(getRel(s.id,o.id));
+    const col=v<30?'#f87171':v<60?'#fbbf24':'#4ade80';
+    return `<div class="rel-row"><div class="rel-name"><span>${o.name}</span><span style="color:${col}">${v}</span></div>
+      <div class="rel-track"><div class="rel-fill" style="width:${v}%;background:${col}"></div></div></div>`;
+  }).join('');
+}
+
+// =====================================================================
+// CONTEXT MENU
+// =====================================================================
+function closeCtxMenu(){ $('ctxMenu').classList.add('hidden'); }
+function openCtxMenu(title,items,cx,cy){
+  const m=$('ctxMenu'); m.innerHTML='';
+  m.appendChild(el('div','ctx-title',title));
+  for(const it of items){
+    const b=el('button','ctx-item',`<span>${it.icon}</span><span>${it.label}</span>`);
+    b.onclick=e=>{ e.stopPropagation(); closeCtxMenu(); it.fn(); };
+    m.appendChild(b);
+  }
+  m.classList.remove('hidden');
+  const r=m.getBoundingClientRect();
+  m.style.left=clamp(cx,8,window.innerWidth-r.width-8)+'px';
+  m.style.top=clamp(cy,8,window.innerHeight-r.height-8)+'px';
+}
+
+// =====================================================================
+// GAME CANVAS INPUT
+// =====================================================================
+function canvasPos(e){
+  const r=gameCv.getBoundingClientRect();
+  return {x:(e.clientX-r.left)*gameCv.width/r.width, y:(e.clientY-r.top)*gameCv.height/r.height};
+}
+function simAtPoint(p){
+  let best=null,bd=1e9;
+  for(const s of G.household){
+    if(Math.abs(p.x-s.x)<15&&p.y>s.y-46&&p.y<s.y+7){
+      const d=Math.abs(p.x-s.x)+Math.abs(p.y-(s.y-20));
+      if(d<bd){ bd=d; best=s; }
+    }
+  }
+  return best;
+}
+function setupGameInput(){
+  gameCv.addEventListener('mousemove',e=>{
+    const p=canvasPos(e), c=clamp(Math.floor(p.x/TILE),0,COLS-1), r=clamp(Math.floor(p.y/TILE),0,ROWS-1);
+    G.build.hover={c,r};
+    if(G.build.active){
+      if(G.build.painting&&G.build.tool==='wall'){
+        const lp=G.build.lastPaint||{c,r};
+        paintWallLine(lp.c,lp.r,c,r);
+        G.build.lastPaint={c,r};
+      }
+      gameCv.style.cursor='crosshair';
+    }else{
+      gameCv.style.cursor=(simAtPoint(p)||furnAt(c,r))?'pointer':'default';
+    }
+  });
+  gameCv.addEventListener('mouseleave',()=>{ G.build.hover=null; G.build.painting=false; });
+  gameCv.addEventListener('mousedown',e=>{
+    if(e.button!==0) return;
+    closeCtxMenu();
+    if(!G.build.active) return;
+    const p=canvasPos(e), c=Math.floor(p.x/TILE), r=Math.floor(p.y/TILE);
+    if(!inB(c,r)) return;
+    const B=G.build;
+    if(B.tool==='wall'){ B.painting=true; paintWall(c,r); B.lastPaint={c,r}; }
+    else if(B.tool==='room'){ B.roomStart={c,r}; }
+    else if(B.tool==='delete'){ deleteAt(c,r); }
+  });
+  gameCv.addEventListener('mouseup',e=>{
+    if(e.button!==0) return;
+    const p=canvasPos(e), c=Math.floor(p.x/TILE), r=Math.floor(p.y/TILE);
+    const B=G.build;
+    if(B.active){
+      if(B.tool==='wall') B.painting=false;
+      else if(B.tool==='room'&&B.roomStart){ stampRoomLive(B.roomStart,{c,r}); B.roomStart=null; }
+      else if(B.tool==='place'&&B.item&&inB(c,r)) placeItem(B.item,c,r);
+      B.dragging=false;
+      return;
+    }
+    liveClick(p,e);
+  });
+  document.addEventListener('mousedown',e=>{
+    if(!$('ctxMenu').contains(e.target)&&e.target!==gameCv) closeCtxMenu();
+  });
+  document.addEventListener('mouseup',()=>{ G.build.painting=false; G.build.dragging=false; });
+}
+function liveClick(p,e){
+  const sel=G.selectedSim;
+  const hitSim=simAtPoint(p);
+  if(hitSim){
+    if(hitSim===sel){ updateHUD(true); refreshPortraitBar(); return; }
+    const items=[{icon:'👆',label:'Select '+hitSim.name,fn:()=>{ G.selectedSim=hitSim; refreshPortraitBar(); updateHUD(true); }}];
+    if(sel){
+      items.push({icon:'💬',label:'Talk (rel '+Math.round(getRel(sel.id,hitSim.id))+')',fn:()=>commandSocial(sel,hitSim,'talk',true)});
+      items.push({icon:'😂',label:'Tell a Joke',fn:()=>commandSocial(sel,hitSim,'joke',true)});
+      items.push({icon:'💢',label:'Argue',fn:()=>commandSocial(sel,hitSim,'argue',true)});
+    }
+    openCtxMenu(hitSim.name,items,e.clientX,e.clientY);
+    return;
+  }
+  const c=Math.floor(p.x/TILE), r=Math.floor(p.y/TILE);
+  if(!inB(c,r)) return;
+  const o=furnAt(c,r);
+  if(o){
+    const d=FURN[o.type];
+    if(!d.use){ toast(d.name+' — just decoration (and it\'s lovely).'); return; }
+    if(!sel) return;
+    const busy=o.user&&o.user!==sel.id;
+    openCtxMenu(d.name+(busy?' (in use)':''),
+      [{icon:d.icon,label:d.label,fn:()=>commandUse(sel,o,true)}],e.clientX,e.clientY);
+    return;
+  }
+  if(sel&&cellWalkable(c,r)) commandWalk(sel,c,r,true);
+}
+
+// =====================================================================
+// BUILD MODE
+// =====================================================================
+const BUILD_TOOLS=[
+  {key:'wall',icon:'🧱',name:'Wall',price:WALL_COST+'/tile'},
+  {key:'room',icon:'⬛',name:'Room',price:'drag area'},
+  {key:'delete',icon:'🗑️',name:'Delete',price:'full refund'},
+];
+function buildBuildPanel(){
+  const tabs=$('buildTabs'); tabs.innerHTML='';
+  for(const cat of BUILD_CATS){
+    const b=el('button','build-tab',cat);
+    b.onclick=()=>{ G.build.cat=cat; buildBuildPanel(); };
+    if(cat===G.build.cat) b.classList.add('active');
+    tabs.appendChild(b);
+  }
+  const box=$('buildItems'); box.innerHTML='';
+  if(G.build.cat==='Build'){
+    for(const t of BUILD_TOOLS){
+      const b=el('button','build-item',`<div class="bi-ico">${t.icon}</div><div class="bi-name">${t.name}</div><div class="bi-price">${t.price}</div>`);
+      if(G.build.tool===t.key) b.classList.add('sel');
+      b.onclick=()=>{ G.build.tool=t.key; G.build.item=null; buildBuildPanel(); };
+      box.appendChild(b);
+    }
+  }else{
+    for(const key of Object.keys(FURN)){
+      const d=FURN[key];
+      if(d.cat!==G.build.cat) continue;
+      const b=el('button','build-item',`<div class="bi-ico">${d.icon}</div><div class="bi-name">${d.name}</div><div class="bi-price">${money(d.price)}</div>`);
+      if(G.build.tool==='place'&&G.build.item===key) b.classList.add('sel');
+      const pick=()=>{ G.build.tool='place'; G.build.item=key; buildBuildPanel(); };
+      b.onclick=pick;
+      b.addEventListener('mousedown',()=>{ pick(); G.build.dragging=true; });
+      box.appendChild(b);
+    }
+  }
+  $('buildHint').innerHTML={
+    wall:'🧱 Click or drag on the lot to paint walls ('+money(WALL_COST)+' each). Leave gaps for doorways!',
+    room:'⬛ Drag a rectangle to build a room: walls around the edge, floor inside. Delete a wall tile to make a door.',
+    delete:'🗑️ Click furniture or walls to remove them (full refund). Deleting a wall leaves floor — instant doorway.',
+    place:'🛒 Click or drag onto the lot to place it. Green = OK, red = blocked.',
+  }[G.build.tool]||'Pick a tool or an item above. Time is paused while you build.';
+}
+function toggleBuildMode(on){
+  const B=G.build;
+  if(on===B.active) return;
+  B.active=on;
+  if(on){
+    G.time.prevSpeed=G.time.speed>0?G.time.speed:1;
+    setSpeed(0);
+    B.tool=null; B.item=null; B.cat='Build';
+    buildBuildPanel();
+    $('buildPanel').classList.add('open');
+    $('buildBadge').classList.remove('hidden');
+    $('btnBuild').classList.add('on');
+    $('relPanel').classList.add('hidden'); G.relOpen=false;
+  }else{
+    B.tool=null; B.item=null; B.roomStart=null; B.painting=false;
+    $('buildPanel').classList.remove('open');
+    $('buildBadge').classList.add('hidden');
+    $('btnBuild').classList.remove('on');
+    setSpeed(G.time.prevSpeed||1);
+    for(const s of G.household){
+      if(s.path&&s.path.some(p=>!cellWalkable(p.c,p.r))) cancelAction(s);
+      if(s.action&&s.action.kind==='use'&&!G.furniture.includes(s.action.obj)) cancelAction(s);
+    }
+  }
+  closeCtxMenu();
+}
+function paintWallLine(c0,r0,c1,r1){
+  const steps=Math.max(Math.abs(c1-c0),Math.abs(r1-r0));
+  if(steps===0){ paintWall(c0,r0); return; }
+  for(let i=0;i<=steps;i++)
+    paintWall(Math.round(c0+(c1-c0)*i/steps),Math.round(r0+(r1-r0)*i/steps));
+}
+function paintWall(c,r){
+  if(!canPlaceWall(c,r)||G.grid[r][c]==='wall') return;
+  if(G.funds<WALL_COST){ toast('Not enough funds!'); G.build.painting=false; return; }
+  G.grid[r][c]='wall'; G.funds-=WALL_COST; updateHUD(true);
+}
+function placeItem(type,c,r){
+  const d=FURN[type];
+  if(!canPlaceItem(type,c,r)){ toast('Blocked — needs clear space.'); return; }
+  if(G.funds<d.price){ toast('Not enough funds!'); return; }
+  G.furniture.push(mkFurn(type,c,r));
+  G.funds-=d.price; rebuildOcc(); updateHUD(true);
+}
+function deleteAt(c,r){
+  const o=furnAt(c,r);
+  if(o){
+    if(o.user){ const s=simById(o.user); if(s) cancelAction(s); }
+    G.furniture.splice(G.furniture.indexOf(o),1);
+    G.funds+=FURN[o.type].price; rebuildOcc(); updateHUD(true); return;
+  }
+  if(G.grid[r][c]==='wall'){ G.grid[r][c]='floor'; G.funds+=WALL_COST; updateHUD(true); }
+  else if(G.grid[r][c]==='floor'){ G.grid[r][c]='grass'; G.funds+=FLOOR_COST; updateHUD(true); }
+}
+function stampRoomLive(a,b){
+  const c0=clamp(Math.min(a.c,b.c),0,COLS-1), c1=clamp(Math.max(a.c,b.c),0,COLS-1);
+  const r0=clamp(Math.min(a.r,b.r),0,ROWS-1), r1=clamp(Math.max(a.r,b.r),0,ROWS-1);
+  const cost=roomCost(c0,r0,c1,r1);
+  if(G.funds<cost){ toast('Not enough funds — that room costs '+money(cost)); return; }
+  let spent=0;
+  for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){
+    const edge=(r===r0||r===r1||c===c0||c===c1);
+    if(edge){
+      if(G.grid[r][c]!=='wall'&&canPlaceWall(c,r)){ G.grid[r][c]='wall'; spent+=WALL_COST; }
+    }else if(G.grid[r][c]==='grass'&&!furnAt(c,r)){ G.grid[r][c]='floor'; spent+=FLOOR_COST; }
+  }
+  G.funds-=spent; updateHUD(true);
+  if(spent>0) toast('Room built! Use Delete on a wall tile to add a door.');
+}
+
+// ---------- speed control ----------
+function setSpeed(v){
+  G.time.speed=v;
+  $('spd0').classList.toggle('active',v===0);
+  $('spd1').classList.toggle('active',v===1);
+  $('spd3').classList.toggle('active',v===3);
+}
+
+// =====================================================================
+// GAME LOOP
+// =====================================================================
+let lastT=0;
+function gameLoop(ts){
+  requestAnimationFrame(gameLoop);
+  const t=ts/1000;
+  const dtReal=Math.min(0.1,Math.max(0,t-(lastT||t))); lastT=t;
+  if(G.screen==='creator') renderCreatorPreview();
+  if(G.screen!=='game'||!G.grid) return;
+  const dtMin=dtReal*G.time.speed;
+  if(dtMin>0){
+    G.time.min+=dtMin;
+    if(G.time.min>=1440){ G.time.min-=1440; G.time.day++; }
+  }
+  for(const s of G.household) simTick(s,dtMin,dtReal);
+  render(t);
+  hudClock+=dtReal;
+  if(hudClock>0.15){ hudClock=0; updateHUD(false); }
+}
+
+// =====================================================================
+// UI WIRING (menu, map, toolbar)
+// =====================================================================
+function wireUI(){
+  $('btnNewGame').onclick=()=>{ showScreen('map'); drawMap(); };
+  $('btnMapBack').onclick=()=>showScreen('menu');
+  $('btnLotCancel').onclick=()=>$('lotModal').classList.add('hidden');
+  const mapCv=$('mapCanvas');
+  mapCv.addEventListener('mousemove',e=>{
+    const i=lotAt(mapPos(e));
+    if(i!==mapHover){ mapHover=i; drawMap(); }
+    mapCv.style.cursor=i>=0?'pointer':'default';
+  });
+  mapCv.addEventListener('mouseleave',()=>{ mapHover=-1; drawMap(); });
+  mapCv.addEventListener('click',e=>{
+    const i=lotAt(mapPos(e));
+    if(i>=0) openLotModal(i);
+  });
+  $('spd0').onclick=()=>{ if(!G.build.active) setSpeed(0); };
+  $('spd1').onclick=()=>{ if(!G.build.active) setSpeed(1); else G.time.prevSpeed=1; };
+  $('spd3').onclick=()=>{ if(!G.build.active) setSpeed(3); else G.time.prevSpeed=3; };
+  $('btnBuild').onclick=()=>toggleBuildMode(!G.build.active);
+  $('btnRel').onclick=()=>{
+    G.relOpen=!G.relOpen;
+    $('relPanel').classList.toggle('hidden',!G.relOpen);
+    if(G.relOpen){ renderRelPanel(); if(G.build.active) toggleBuildMode(false); }
+  };
+  $('btnRelX').onclick=()=>{ G.relOpen=false; $('relPanel').classList.add('hidden'); };
+  $('btnQuit').onclick=()=>{
+    if(G.build.active) toggleBuildMode(false);
+    closeCtxMenu();
+    G.household=[]; G.grid=null; G.furniture=[]; G.selectedSim=null;
+    casSims=[];
+    showScreen('menu');
+  };
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      if(!$('lotModal').classList.contains('hidden')){ $('lotModal').classList.add('hidden'); return; }
+      closeCtxMenu();
+      if(G.build.active) toggleBuildMode(false);
+    }
+    if(G.screen!=='game'||G.build.active) return;
+    if(e.key===' '){ e.preventDefault(); setSpeed(G.time.speed===0?(G.time.prevSpeed||1):(G.time.prevSpeed=G.time.speed,0)); }
+    if(e.key==='1') setSpeed(1);
+    if(e.key==='3') setSpeed(3);
+    if(e.key==='b'||e.key==='B') toggleBuildMode(true);
+  });
+}
+
+// =====================================================================
+// startup sanity check for the pre-built layouts (logs to console only)
+// =====================================================================
+function validateLayouts(){
+  const allAdj=o=>{
+    const out=[];
+    for(let r=o.r;r<o.r+o.h;r++)for(let c=o.c;c<o.c+o.w;c++)
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(d=>out.push({c:c+d[0],r:r+d[1]}));
+    return out;
+  };
+  for(const key of Object.keys(LAYOUTS)){
+    const g=blankGrid(), f=[];
+    LAYOUTS[key].build(g,f);
+    const occ=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+    for(const o of f){
+      for(let r=o.r;r<o.r+o.h;r++)for(let c=o.c;c<o.c+o.w;c++){
+        if(!inB(c,r)){ console.warn('[layout]',key,o.type,'out of bounds'); continue; }
+        if(g[r][c]!=='floor') console.warn('[layout]',key,o.type,'not on floor at',c,r,'('+g[r][c]+')');
+        if(occ[r][c]) console.warn('[layout]',key,o.type,'overlaps',occ[r][c].type,'at',c,r);
+        occ[r][c]=o;
+      }
+    }
+    for(const o of f){
+      const d=FURN[o.type]; if(!d.use) continue;
+      const spots=d.use==='front'?frontSpots(o):allAdj(o);
+      const ok=spots.some(p=>inB(p.c,p.r)&&g[p.r][p.c]!=='wall'&&!occ[p.r][p.c]);
+      if(!ok) console.warn('[layout]',key,o.type,'has no reachable use spot at',o.c,o.r);
+    }
+  }
+}
+
+// =====================================================================
+// INIT
+// =====================================================================
+function init(){
+  setupCanvases();
+  buildCreatorUI();
+  resetCreator(true);
+  buildNeedRows();
+  drawMap();
+  setupGameInput();
+  wireUI();
+  validateLayouts();
+  requestAnimationFrame(gameLoop);
+}
+init();
+</script>
+</body>
+</html>
