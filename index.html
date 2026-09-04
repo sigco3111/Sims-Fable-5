@@ -1735,7 +1735,7 @@ function stamp방Live(a,b){
     }else if(G.grid[r][c]==='grass'&&!furnAt(c,r)){ G.grid[r][c]='floor'; spent+=FLOOR_COST; }
   }
   G.funds-=spent; updateHUD(true);
-  if(spent>0) toast('방 완성! 벽 타일에서 '삭제'를 눌러 출입구를 만드세요.');
+  if(spent>0) toast('방 완성! 벽 타일에서 「삭제」를 눌러 출입구를 만드세요.');
 }
 
 // ---------- speed control ----------
