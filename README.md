@@ -1,94 +1,138 @@
-# Tiny Lives — a cozy little life simulator
+# 🏠 작은 인생 (Tiny Lives) — 한글화판
 
-A complete, playable life-simulation game (think *The Sims*, shrunk down) that runs entirely in your browser from **one single HTML file**. No installation, no internet, no dependencies — just double-click `life-sim.html` and play.
+> _The Sims_ 를 한 손에 쥐어볼 수 있을 만큼 가볍게 줄인 **코지(cozy) 라이프 시뮬레이션**.
+> Claude Fable 5가 **단 1시간, 단 1프롬프트**로 만든 게임을 한국어로 즐기세요.
 
-> **Made by Claude Fable 5 — in 1 prompt, in about 1 hour.**
-> The entire game (≈1,860 lines of HTML, CSS and JavaScript) was generated,
-> tested in a real browser, debugged and delivered from a single request.
-
----
-
-## ▶ How to play
-
-1. Double-click **`life-sim.html`** (any modern browser: Chrome, Edge, Firefox).
-2. **New Game → pick a lot** on the neighborhood map.
-3. Move into a **furnished house** (Cozy Cottage / Family Home / Modern Loft) or
-   start from an **empty plot** and build it yourself.
-4. **Create your household** — as many Sims as you like.
-5. Click a Sim to select them, click objects or other Sims to give commands, and
-   keep everyone's needs in the green.
-
-**Controls:** click a Sim to select • click furniture → choose an action •
-click another Sim → Talk / Joke / Argue • `Space` pause • `1` / `3` speed •
-`B` build mode • `Esc` close menus.
+[![라이브 데모](https://img.shields.io/badge/라이브_데모-GitHub%20Pages-222222?style=for-the-badge&logo=githubpages&logoColor=white)](https://sigco3111.github.io/Sims-Fable-5/)
+[![원본 저장소](https://img.shields.io/badge/원본-Manonsigilla%2FSims--Fable--5-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Manonsigilla/Sims-Fable-5)
+[![언어](https://img.shields.io/badge/한국어-100%25%20번역-blue?style=for-the-badge)]()
 
 ---
 
-## What's in it
+## 🌐 라이브 데모 : https://sigco3111.github.io/Sims-Fable-5/
 
-- **Main menu, neighborhood map and lot selection** with animated transitions.
-- **Sim Creator:** name, gender, 6 skin tones, 5 hairstyles, 8 hair colors,
-  10 outfit colors, and 3 personality traits from a list of 10.
-- **Live mode:** top-down 2D house, 5 needs (Hunger, Energy, Hygiene, Fun,
-  Social), mood, a day/night cycle that actually darkens the lot, and
-  interactable objects (bed, fridge, shower, toilet, sink, TV, bookshelf, sofa…).
-- **Personality that matters:** traits change need-decay rates *and* autonomous
-  behavior — a Foodie eats more often, a Bookworm gravitates to the bookshelf,
-  a Grumpy Sim argues and stays moodier.
-- **Social system:** Talk / Joke / Argue between Sims, with a relationship meter.
-- **Build & Buy mode:** paint walls, drag out rooms on a grid, place and delete
-  furniture from categorized panels, with a working in-game economy (§).
-- **100% Canvas 2D art** — every Sim, wall and appliance is drawn in code. No
-  image files, no sprite sheets, no external assets.
+브라우저에서 클릭 한 번으로 바로 플레이할 수 있습니다. 설치도, 인터넷 연결도, 외부 자료도 필요 없습니다.
 
 ---
 
-## ✅ Why it's great
+## 📖 게임 소개
 
-- **Truly zero-install / zero-dependency.** One file, no build step, no server,
-  no CDN, no internet. It works offline and you can email it to someone.
-- **Surprisingly complete.** Menu → map → creator → live mode → build mode is a
-  full gameplay loop, not a tech demo stub.
-- **Traits aren't cosmetic.** They visibly drive both stat decay and what Sims
-  choose to do on their own.
-- **Self-contained and portable.** Runs the same on any machine with a browser;
-  nothing to keep up to date.
-- **Procedural art.** Because everything is drawn with Canvas primitives, the
-  whole game is just text — easy to read, copy, and tweak.
-- **Built and verified fast.** Generated, syntax-checked, and play-tested in an
-  actual browser inside a single session.
+**작은 인생**은 _The Sims_ 를 떠올리게 하는 2D 탑다운 라이프 시뮬레이션을 **단 하나의 HTML 파일**에 담은 미니 게임입니다.
 
-## ⚠️ Cons & limitations
-
-Be fair about what a "one file, one prompt" game is and isn't:
-
-- **No save/load.** State lives in memory — refreshing the page restarts the
-  game. There's no persistence.
-- **Everything's in one file.** ~1,860 lines of HTML/CSS/JS together is great for
-  portability but harder to maintain or extend than a modular codebase.
-- **Simple AI.** Autonomous behavior is utility-based and can look repetitive;
-  Sims occasionally path awkwardly or bunch up (no Sim-to-Sim collision).
-- **Rough balancing.** Need-decay rates and the economy were set by feel, not
-  tuned through real playtesting. Money only goes *down* — there are no jobs or
-  income yet.
-- **No audio.** No music or sound effects.
-- **No life progression.** No aging, careers, skills growth or life stages — it's
-  a needs-and-build sandbox, not a full life-story sim.
-- **Geometric / emoji art.** Charming and consistent, but not detailed sprite art.
-- **Desktop-mouse oriented.** The canvas scales, but it isn't designed for touch.
-- **Not micro-optimized.** It redraws the whole canvas each frame and recomputes
-  pathfinding on demand — fine at this scale, not built for huge lots or crowds.
-- **Generated in one pass.** It was tested, but edge cases that weren't exercised
-  during that testing may still surface. Treat it as a polished proof-of-concept,
-  not a shipped product.
+- 🛏️ **5가지 욕구 시스템** — 배고픔 · 에너지 · 청결 · 재미 · 사교
+- 🌗 **낮/밤 사이클** — 시간이 흐르면서 터전이 실제로 어두워집니다
+- 🧠 **성격이 실제 영향** — 게으름은 소파를, 미식가는 음식을, 독서광은 책장을 찾아갑니다
+- 💞 **관계 시스템** — 대화·주담·다툼으로 관계 게이지를 움직이세요
+- 🏗️ **건설 & 구매 모드** — 벽을 칠하고, 방을 그리고, 가구를 배치하고, 돈을 벌어 더 꾸미세요
+- 🎨 **가족 생성기** — 이름, 성별, 피부색(6), 헤어(6), 헤어컬러(8), 옷 색(10), 성격 특성(10개 중 3개)
 
 ---
 
-## 🛠 Tech
+## 🎮 플레이 방법
 
-Plain **HTML + CSS + JavaScript**, rendered on a single **`<canvas>`** with the
-2D context. No frameworks, no libraries, no external files. BFS grid
-pathfinding, a fixed-timestep-ish game loop driven by `requestAnimationFrame`,
-and a small utility-AI for Sim autonomy.
+1. 위 **라이브 데모** 링크를 클릭하세요 (또는 `life-sim.html` 을 더블클릭).
+2. **새 게임 → 터전 선택** — 지도에서 마음에 드는 위치를 고르세요.
+3. **준비된 집에 입주**(아늑한 오두막 / 가족의 집 / 모던 로프트)하거나 **빈 터전**에서 직접 지을 수 있습니다.
+4. **가족 만들기** — 원하는 만큼의 심을 만드세요.
+5. 시뮬레이션을 시작! 게임 시간이 흐르는 동안 심들이 자율적으로 행동합니다.
 
-*Built by Claude Fable 5 · single prompt · ~1 hour.*
+---
+
+## ✨ 게임에 포함된 것
+
+### 🎬 메인 메뉴 / 지도 / 터전 선택
+- 부드러운 화면 전환 애니메이션
+- 위도우 레인 · 메이플 코트의 4가지 배치
+
+### 🧑 심 생성기
+- 이름, 성별, 6가지 피부색, 6가지 헤어, 8가지 헤어컬러, 10가지 옷 색
+- 10가지 성격 특성 중 3가지를 선택
+
+### 🌞 라이브 모드
+- 2D 탑다운 집
+- 5가지 욕구(배고픔·에너지·청결·재미·사교) + 기분
+- 낮/밤 사이클 (터전이 실제로 어두워짐)
+- 상호작용 가구: 침대, 냉장고, 샤워기, 변기, 싱크대, TV, 책장, 소파 등
+
+### 🧠 의미 있는 성격 시스템
+성격 특성은 욕구 감소 속도와 자율 행동에 모두 영향을 줍니다.
+- 🍳 **미식가** → 자주 먹으러 감
+- 📚 **독서광** → 책장으로 빨려감
+- 😠 **까칠함** → 다투고 기분이 다운
+- 🛋️ **게으름** → 소파에서 잘 일어나지 않음
+
+### 💬 사회 시스템: 대화 / 농담 / 다툼
+- 심끼리 관계 게이지가 쌓이고 무너집니다
+- 까칠한 심과는 농담이 잘 안 통합니다
+
+### 🛠️ 건설 & 구매 모드
+- 벽 칠하기
+- 격자 위에 방 그리기
+- 카테고리별 가구 배치 & 삭제
+- 게임 내 경제 (§) 작동
+
+---
+
+## ⚠️ 제약과 한계
+
+- **저장/불러오기 없음** — 새로고침하면 게임이 처음부터 다시 시작됩니다.
+- **모든 것이 한 파일에** — 약 1,860줄의 HTML/CSS/JS가 한데 묶여 있어 휴대성은 좋지만 모듈화는 어렵습니다.
+- **오디오 없음** — 음악·효과음은 없습니다.
+- **인생 진행 단계 없음** — 나이·커리어·기술 성장 같은 시스템은 없으며, 욕구·건설 샌드박스에 가깝습니다.
+- **기하학·이모지 아트** — 매력적이고 일관되지만 디테일한 스프라이트는 아닙니다.
+
+---
+
+## 🇰🇷 한글화에 대하여
+
+이 저장소는 [Manonsigilla/Sims-Fable-5](https://github.com/Manonsigilla/Sims-Fable-5)의 **완전 한글화 미러**입니다.
+
+### 번역 범위
+- ✅ 모든 버튼, 메뉴, 라벨
+- ✅ 10가지 성격 특성과 설명
+- ✅ 12가지 가구 이름과 카테고리
+- ✅ 3가지 집 배치와 설명
+- ✅ 5단계 욕구 시스템
+- ✅ 4단계 기분 상태
+- ✅ 8가지 행동 라벨
+- ✅ 알림·토스트·힌트 메시지
+- ✅ 게임 내 이벤트 / 상태 텍스트
+
+### 보존된 영문 식별자
+- 변수명, 함수명, CSS class, HTML id (코드 안정성을 위해)
+- 영문 인명 풀 (Mila, Theo, Hazel, Jasper 등 — 의도된 디자인)
+- 시스템 메시지 키 (`e.key === 'Escape'` 등)
+
+---
+
+## 🛠️ 기술 스택
+
+- **HTML + CSS + JavaScript** — 순수 바닐라
+- **단일 `<canvas>`** (2D context)
+- **BFS 격자 경로 찾기**
+- **`requestAnimationFrame`** 기반 고정 타임스텝 게임 루프
+- 심 자율 행동을 위한 **유틸리티 AI**
+- **프레임워크 없음, 라이브러리 없음, 외부 파일 없음**
+
+---
+
+## 📂 파일 구조
+
+```
+Sims-Fable-5/
+├── README.md       # 이 문서
+└── life-sim.html   # 게임 본체 (한글화 완료, 약 1,867줄)
+```
+
+원본 저장소도 같은 두 파일로만 구성되어 있습니다.
+
+---
+
+## 🙏 크레딧
+
+- **원작**: [Manonsigilla](https://github.com/Manonsigilla) · Claude Fable 5
+- **한글화**: [sigco3111](https://github.com/sigco3111)
+
+원본 게임은 단일 프롬프트로 1시간 만에 만들어졌으며, 이 미러는 한국어 사용자가 더 자연스럽게 즐길 수 있도록 UI 텍스트를 번역한 것입니다.
+
+_원본 메시지: Built by Claude Fable 5 · single prompt · ~1 hour._
