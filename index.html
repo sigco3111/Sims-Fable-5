@@ -49,8 +49,8 @@ button:active{transform:scale(.96)}
 .cre-card{background:#ffffffee;border-radius:16px;padding:14px 18px;box-shadow:0 12px 34px rgba(0,0,0,.18)}
 .cre-card h4{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin:11px 0 6px}
 #creatorForm{width:440px}
-#sim이름{flex:1;padding:9px 12px;border:2px solid #cbd5e1;border-radius:10px;font-size:16px;font-weight:700;color:#0f172a;outline:none}
-#sim이름:focus{border-color:#22c55e}
+#simName{flex:1;padding:9px 12px;border:2px solid #cbd5e1;border-radius:10px;font-size:16px;font-weight:700;color:#0f172a;outline:none}
+#simName:focus{border-color:#22c55e}
 .name-row{display:flex;gap:8px}
 .swatch-row{display:flex;gap:8px;flex-wrap:wrap}
 .swatch{width:33px;height:33px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #cbd5e1;cursor:pointer;padding:0}
@@ -90,7 +90,7 @@ button:active{transform:scale(.96)}
 #simPanel{position:absolute;left:12px;bottom:12px;width:282px;background:rgba(8,15,33,.88);backdrop-filter:blur(8px);border-radius:16px;padding:12px;z-index:20;color:#e2e8f0;box-shadow:0 12px 34px rgba(0,0,0,.45);border:1px solid #ffffff18}
 .sp-top{display:flex;gap:10px;align-items:center;margin-bottom:6px}
 #spPortrait{border-radius:12px;background:#1e293b;flex-shrink:0}
-#sp이름{font-weight:800;font-size:16.5px;color:#fff}
+#spName{font-weight:800;font-size:16.5px;color:#fff}
 #spTraits{font-size:11px;color:#94a3b8;margin-top:1px}
 #spMood{font-size:12.5px;font-weight:800;margin-top:3px}
 #spAction{font-size:11.5px;color:#7dd3fc;min-height:15px;margin-bottom:7px;font-weight:600}
@@ -162,7 +162,7 @@ button:active{transform:scale(.96)}
     <h3 id="lotModalTitle">터전</h3>
     <p>준비된 집 배치를 고르거나, 빈 터전에서 직접 집을 지어보세요.</p>
     <div id="layoutChoices"></div>
-    <button class="ghost2" style="width:auto;padding:10px 28px" id="btn터전취소">취소</button>
+    <button class="ghost2" style="width:auto;padding:10px 28px" id="btnLotCancel">취소</button>
   </div>
 </div>
 
@@ -173,8 +173,8 @@ button:active{transform:scale(.96)}
     <div class="cre-card" id="creatorForm">
       <h4 style="margin-top:0">이름</h4>
       <div class="name-row">
-        <input id="sim이름" maxlength="18" placeholder="심 이름…">
-        <button class="mini-btn" id="btnRand이름" title="이름 자동 생성" style="font-size:17px">🎲</button>
+        <input id="simName" maxlength="18" placeholder="심 이름…">
+        <button class="mini-btn" id="btnRandName" title="이름 자동 생성" style="font-size:17px">🎲</button>
       </div>
       <h4>성별</h4>
       <div class="swatch-row" id="genderRow">
@@ -212,7 +212,7 @@ button:active{transform:scale(.96)}
     <button class="speed-btn" id="spd0" title="일시정지">⏸</button>
     <button class="speed-btn active" id="spd1" title="보통 속도">▶</button>
     <button class="speed-btn" id="spd3" title="빠른 속도">⏩</button>
-    <div class="tb-pill" id="tb재미ds">§ 20,000</div>
+    <div class="tb-pill" id="tbFunds">§ 20,000</div>
     <div class="tb-spacer"></div>
     <button class="tb-btn" id="btnRel">💞 관계</button>
     <button class="tb-btn" id="btnBuild">🔨 건설 모드</button>
@@ -224,7 +224,7 @@ button:active{transform:scale(.96)}
     <div class="sp-top">
       <canvas id="spPortrait" width="56" height="56"></canvas>
       <div style="min-width:0">
-        <div id="sp이름">—</div>
+        <div id="spName">—</div>
         <div id="spTraits"></div>
         <div id="spMood"></div>
       </div>
@@ -298,7 +298,7 @@ function toast(msg){
 
 function showScreen(name){
   G.screen=name;
-  document.querySelector전체('.screen').forEach(s=>s.classList.toggle('active', s.id==='screen-'+name));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id==='screen-'+name));
 }
 
 // =====================================================================
@@ -345,7 +345,7 @@ const BUILD_CATS=['건설','침실','주방','화장실','거실'];
 
 // ---------- layout stamping helpers ----------
 function blankGrid(){ return Array.from({length:ROWS},()=>Array(COLS).fill('grass')); }
-function stamp방(g,c0,r0,c1,r1){
+function stampRoom(g,c0,r0,c1,r1){
   for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){
     const edge=(r===r0||r===r1||c===c0||c===c1);
     g[r][c]=edge?'wall':'floor';
@@ -359,9 +359,9 @@ const LAYOUTS={
   cottage:{
     name:'아늑한 오두막', price:6400, desc:'필요한 것이 다 갖춰진 아담한 3방 시작용 집',
     build(g,f){
-      stamp방(g,6,4,14,12);            // living + kitchen
-      stamp방(g,14,4,20,8);            // bedroom
-      stamp방(g,14,8,20,12);           // bathroom
+      stampRoom(g,6,4,14,12);            // living + kitchen
+      stampRoom(g,14,4,20,8);            // bedroom
+      stampRoom(g,14,8,20,12);           // bathroom
       stampDoor(g,10,12); stampDoor(g,14,6); stampDoor(g,14,10);
       [['fridge',7,5],['counter',8,5],['tv',11,5],['sofa',10,8],['table',8,8],
        ['bookshelf',13,7],['lamp',7,11],['bed',15,5],['dresser',17,5],['plant',19,7],
@@ -372,11 +372,11 @@ const LAYOUTS={
   family:{
     name:'가족의 집', price:9200, desc:'침실 2개, 넓은 주방 — 가족 모두를 위한 공간',
     build(g,f){
-      stamp방(g,4,3,14,9);             // living
-      stamp방(g,4,9,14,14);            // kitchen
-      stamp방(g,14,3,20,8);            // bedroom 1
-      stamp방(g,14,8,20,13);           // bedroom 2
-      stamp방(g,20,8,24,13);           // bathroom
+      stampRoom(g,4,3,14,9);             // living
+      stampRoom(g,4,9,14,14);            // kitchen
+      stampRoom(g,14,3,20,8);            // bedroom 1
+      stampRoom(g,14,8,20,13);           // bedroom 2
+      stampRoom(g,20,8,24,13);           // bathroom
       stampDoor(g,9,14); stampDoor(g,7,9); stampDoor(g,14,6); stampDoor(g,17,8); stampDoor(g,20,10);
       [['sofa',7,5],['tv',7,7],['bookshelf',12,4],['lamp',5,4],['plant',13,8],
        ['fridge',5,10],['counter',6,10],['counter',7,10],['table',9,11],['lamp',13,10],
@@ -389,8 +389,8 @@ const LAYOUTS={
   loft:{
     name:'모던 로프트', price:7600, desc:'하나의 넓은 오픈 스튜디오에 세련된 화장실까지',
     build(g,f){
-      stamp방(g,7,4,19,12);            // open studio
-      stamp방(g,19,4,24,9);            // bathroom
+      stampRoom(g,7,4,19,12);            // open studio
+      stampRoom(g,19,4,24,9);            // bathroom
       stampDoor(g,13,12); stampDoor(g,19,6);
       [['bed',8,5],['dresser',10,5],['tv',12,5],['counter',16,5],['fridge',17,5],
        ['sofa',12,7],['table',15,8],['bookshelf',8,9],['lamp',9,11],['plant',18,11],
@@ -476,34 +476,34 @@ function mapPos(e){
 function lotAt(p){ return MAP_LOTS.findIndex(L=>p.x>=L.x&&p.x<=L.x+L.w&&p.y>=L.y&&p.y<=L.y+L.h); }
 
 // ---------- lot modal ----------
-let pending터전=null;
-function open터전Modal(lotIdx){
-  pending터전=MAP_LOTS[lotIdx];
-  $('lotModalTitle').textContent='🏡 '+pending터전.name;
+let pendingLot=null;
+function openLotModal(lotIdx){
+  pendingLot=MAP_LOTS[lotIdx];
+  $('lotModalTitle').textContent='🏡 '+pendingLot.name;
   const box=$('layoutChoices'); box.innerHTML='';
   for(const key of Object.keys(LAYOUTS)){
     const L=LAYOUTS[key];
-    const card=document.createElement('div'); card.class이름='layout-card';
+    const card=document.createElement('div'); card.className='layout-card';
     const cv=document.createElement('canvas'); cv.width=164; cv.height=104;
     card.appendChild(cv);
     card.insertAdjacentHTML('beforeend',
       `<div class="layout-name">${L.name}</div><div class="layout-price">${money(L.price)}</div><div class="layout-desc">${L.desc}</div>`);
-    card.onclick=()=>choose터전(key);
+    card.onclick=()=>chooseLot(key);
     box.appendChild(card);
     drawLayoutPreview(cv,key);
   }
-  const empty=document.createElement('div'); empty.class이름='layout-card';
+  const empty=document.createElement('div'); empty.className='layout-card';
   empty.innerHTML=`<canvas width="164" height="104"></canvas>
     <div class="layout-name">빈 터전</div><div class="layout-price">${money(0)}</div>
     <div class="layout-desc">A blank lawn — build your dream home yourself</div>`;
-  empty.onclick=()=>choose터전('empty');
+  empty.onclick=()=>chooseLot('empty');
   box.appendChild(empty);
   drawLayoutPreview(empty.querySelector('canvas'),'empty');
   $('lotModal').classList.remove('hidden');
 }
-function choose터전(layoutKey){
+function chooseLot(layoutKey){
   const price=layoutKey==='empty'?0:LAYOUTS[layoutKey].price;
-  G.lot={name:pending터전.name, layout:layoutKey, price};
+  G.lot={name:pendingLot.name, layout:layoutKey, price};
   $('lotModal').classList.add('hidden');
   resetCreator(true);
   showScreen('creator');
@@ -610,7 +610,7 @@ function drawSimPortrait(cv,look){
 const creator={name:'',gender:'female',skin:1,hairColor:0,hairStyle:0,outfit:5,traits:new Set()};
 let casSims=[];   // household drafts before moving in
 
-function el(tag,cls,html){ const e=document.createElement(tag); if(cls)e.class이름=cls; if(html!=null)e.innerHTML=html; return e; }
+function el(tag,cls,html){ const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; }
 
 function buildCreatorUI(){
   const mkSwatches=(rowId,colors,key)=>{
@@ -642,13 +642,13 @@ function buildCreatorUI(){
     };
     tg.appendChild(b);
   }
-  $('genderRow').querySelector전체('.chip').forEach(b=>{
+  $('genderRow').querySelectorAll('.chip').forEach(b=>{
     b.onclick=()=>{ creator.gender=b.dataset.g; refreshCreatorUI(); };
   });
-  $('sim이름').addEventListener('input',e=>{ creator.name=e.target.value; });
-  $('btnRand이름').onclick=()=>{
+  $('simName').addEventListener('input',e=>{ creator.name=e.target.value; });
+  $('btnRandName').onclick=()=>{
     creator.name=choice(creator.gender==='female'?NAMES_F:NAMES_M);
-    $('sim이름').value=creator.name;
+    $('simName').value=creator.name;
   };
   $('btnAddSim').onclick=addSimToHousehold;
   $('btnMoveIn').onclick=tryMoveIn;
@@ -656,11 +656,11 @@ function buildCreatorUI(){
 }
 
 function refreshCreatorUI(){
-  const selIn=(rowId,i)=>$(rowId).querySelector전체('.swatch,.chip').forEach(b=>b.classList.toggle('sel',+b.dataset.i===i));
+  const selIn=(rowId,i)=>$(rowId).querySelectorAll('.swatch,.chip').forEach(b=>b.classList.toggle('sel',+b.dataset.i===i));
   selIn('skinRow',creator.skin); selIn('hairColorRow',creator.hairColor);
   selIn('outfitRow',creator.outfit); selIn('hairStyleRow',creator.hairStyle);
-  $('genderRow').querySelector전체('.chip').forEach(b=>b.classList.toggle('sel',b.dataset.g===creator.gender));
-  $('traitsGrid').querySelector전체('.trait-btn').forEach(b=>{
+  $('genderRow').querySelectorAll('.chip').forEach(b=>b.classList.toggle('sel',b.dataset.g===creator.gender));
+  $('traitsGrid').querySelectorAll('.trait-btn').forEach(b=>{
     const on=creator.traits.has(b.dataset.trait);
     b.classList.toggle('sel',on);
     b.classList.toggle('dis',!on&&creator.traits.size>=3);
@@ -709,7 +709,7 @@ function refreshHouseholdList(){
     edit.onclick=()=>{
       creator.name=s.name; creator.gender=s.gender; creator.skin=s.skin; creator.hairColor=s.hairColor;
       creator.hairStyle=s.hairStyle; creator.outfit=s.outfit; creator.traits=new Set(s.traits);
-      $('sim이름').value=s.name;
+      $('simName').value=s.name;
       casSims.splice(idx,1);
       refreshHouseholdList(); refreshCreatorUI();
     };
@@ -722,7 +722,7 @@ function refreshHouseholdList(){
 }
 
 function randomizeCreatorLook(){
-  creator.name=''; $('sim이름').value='';
+  creator.name=''; $('simName').value='';
   creator.gender=Math.random()<0.5?'female':'male';
   creator.skin=irnd(0,SKINS.length-1);
   creator.hairColor=irnd(0,HAIRCOLORS.length-1);
@@ -902,7 +902,7 @@ const PROTECTED_USE=['bed','shower','toilet'];
 function protectedBusy(s){
   return s.action&&s.action.kind==='use'&&s.action.phase==='doing'&&PROTECTED_USE.includes(s.action.obj.type);
 }
-function in사교(s){ return s.action&&s.action.kind==='social'; }
+function inSocial(s){ return s.action&&s.action.kind==='social'; }
 
 function cancelAction(sim){
   const a=sim.action;
@@ -965,9 +965,9 @@ function commandWalk(sim,c,r,player){
   sim.path=path; return true;
 }
 
-function command사교(sim,other,mode,player){
+function commandSocial(sim,other,mode,player){
   if(!other||other===sim) return false;
-  if(in사교(other)||protectedBusy(other)){
+  if(inSocial(other)||protectedBusy(other)){
     if(player) toast(other.name+' is busy right now.');
     setBubble(sim,'❗',2); return false;
   }
@@ -990,7 +990,7 @@ function command사교(sim,other,mode,player){
   return true;
 }
 
-function start사교Doing(a,b,mode){
+function startSocialDoing(a,b,mode){
   const dur=mode==='talk'?9:mode==='joke'?7:6;
   a.action={kind:'social',mode,withId:b.id,role:'init',phase:'doing',remain:dur};
   b.action={kind:'social',mode,withId:a.id,role:'recv',phase:'doing',remain:dur};
@@ -1009,7 +1009,7 @@ function onArrive(sim){
   if(a.kind==='social'&&a.role==='init'){
     const other=simById(a.withId);
     if(!other||!other.action||other.action.kind!=='social'||other.action.withId!==sim.id){ sim.action=null; return; }
-    if(dist2(sim.x,sim.y,other.x,other.y)<=2.1*TILE){ start사교Doing(sim,other,a.mode); return; }
+    if(dist2(sim.x,sim.y,other.x,other.y)<=2.1*TILE){ startSocialDoing(sim,other,a.mode); return; }
     if(a.retries>0){
       a.retries--;
       const start=cellOfSim(sim), oc=cellOfSim(other);
@@ -1020,7 +1020,7 @@ function onArrive(sim){
   }
 }
 
-function finish사교(a,b,mode){
+function finishSocial(a,b,mode){
   if(mode==='talk'){ addRel(a.id,b.id,6); setBubble(a,'🙂',2); setBubble(b,'🙂',2); }
   else if(mode==='joke'){
     if(b.grumpy&&Math.random()<0.35){ addRel(a.id,b.id,-6); setBubble(b,'😒',2.5); setBubble(a,'😅',2.5); }
@@ -1064,7 +1064,7 @@ function simTick(sim,dtMin,dtReal){
         other.needs.social=clamp(other.needs.social-1.2*dtMin,0,100);
         other.needs.fun=clamp(other.needs.fun-1.2*dtMin,0,100);
       }
-      if(a.remain<=0) finish사교(sim,other,m);
+      if(a.remain<=0) finishSocial(sim,other,m);
     }
   }
   moveSim(sim,dtReal);
@@ -1109,7 +1109,7 @@ function decideAutonomy(sim){
     if(v>=66) continue;
     const urg=(74-v)*sim.weight[n];
     if(n==='social'){
-      const others=G.household.filter(o=>o!==sim&&!in사교(o)&&!protectedBusy(o)&&(!o.action||o.action.kind==='walk'||o.action.kind==='use'));
+      const others=G.household.filter(o=>o!==sim&&!inSocial(o)&&!protectedBusy(o)&&(!o.action||o.action.kind==='walk'||o.action.kind==='use'));
       if(!others.length) continue;
       others.sort((p,q)=>dist2(sim.x,sim.y,p.x,p.y)-dist2(sim.x,sim.y,q.x,q.y));
       const other=others[0];
@@ -1119,7 +1119,7 @@ function decideAutonomy(sim){
         const r=Math.random();
         if(sim.grumpy&&r<0.35) mode='argue';
         else if(r<0.3) mode='joke';
-        command사교(sim,other,mode,false);
+        commandSocial(sim,other,mode,false);
       }};
     }else{
       const objs=freeObjectsRestoring(n);
@@ -1390,7 +1390,7 @@ function canPlaceItem(type,c,r){
   }
   return true;
 }
-function canPlace벽(c,r){
+function canPlaceWall(c,r){
   if(!inB(c,r)||furnAt(c,r)) return false;
   for(const s of G.household){ const sc=cellOfSim(s); if(sc.c===c&&sc.r===r) return false; }
   return true;
@@ -1410,7 +1410,7 @@ function drawBuildOverlay(x){
     x.fillStyle=ok?'rgba(34,197,94,.3)':'rgba(239,68,68,.4)';
     x.fillRect(hov.c*TILE,hov.r*TILE,d.w*TILE,d.h*TILE);
   }else if(B.tool==='wall'){
-    const ok=canPlace벽(hov.c,hov.r)&&G.funds>=WALL_COST;
+    const ok=canPlaceWall(hov.c,hov.r)&&G.funds>=WALL_COST;
     x.fillStyle=ok?'rgba(34,197,94,.35)':'rgba(239,68,68,.4)';
     x.fillRect(hov.c*TILE,hov.r*TILE,TILE,TILE);
   }else if(B.tool==='room'){
@@ -1487,10 +1487,10 @@ function updateHUD(force){
   const tm=G.time, hh=Math.floor(tm.min/60)%24, mm=Math.floor(tm.min%60);
   $('tbClock').textContent=(darknessLevel()>0.25?'🌙 ':'☀️ ')+String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
   $('tbDay').textContent='일차 '+tm.day;
-  $('tb재미ds').textContent=money(G.funds);
+  $('tbFunds').textContent=money(G.funds);
   const s=G.selectedSim; if(!s) return;
   const mood=simMood(s);
-  $('sp이름').textContent=(s.gender==='female'?'♀ ':'♂ ')+s.name;
+  $('spName').textContent=(s.gender==='female'?'♀ ':'♂ ')+s.name;
   $('spTraits').textContent=s.traits.map(t=>TRAITS[t].emoji+' '+TRAITS[t].name).join('  ');
   $('spMood').innerHTML=`<span style="color:${mood.color}">${mood.emoji} ${mood.label}</span>`;
   $('spAction').textContent=actionLabel(s);
@@ -1558,7 +1558,7 @@ function setupGameInput(){
     if(G.build.active){
       if(G.build.painting&&G.build.tool==='wall'){
         const lp=G.build.lastPaint||{c,r};
-        paint벽Line(lp.c,lp.r,c,r);
+        paintWallLine(lp.c,lp.r,c,r);
         G.build.lastPaint={c,r};
       }
       gameCv.style.cursor='crosshair';
@@ -1574,7 +1574,7 @@ function setupGameInput(){
     const p=canvasPos(e), c=Math.floor(p.x/TILE), r=Math.floor(p.y/TILE);
     if(!inB(c,r)) return;
     const B=G.build;
-    if(B.tool==='wall'){ B.painting=true; paint벽(c,r); B.lastPaint={c,r}; }
+    if(B.tool==='wall'){ B.painting=true; paintWall(c,r); B.lastPaint={c,r}; }
     else if(B.tool==='room'){ B.roomStart={c,r}; }
     else if(B.tool==='delete'){ deleteAt(c,r); }
   });
@@ -1584,7 +1584,7 @@ function setupGameInput(){
     const B=G.build;
     if(B.active){
       if(B.tool==='wall') B.painting=false;
-      else if(B.tool==='room'&&B.roomStart){ stamp방Live(B.roomStart,{c,r}); B.roomStart=null; }
+      else if(B.tool==='room'&&B.roomStart){ stampRoom(B.roomStart,{c,r}); B.roomStart=null; }
       else if(B.tool==='place'&&B.item&&inB(c,r)) placeItem(B.item,c,r);
       B.dragging=false;
       return;
@@ -1603,9 +1603,9 @@ function liveClick(p,e){
     if(hitSim===sel){ updateHUD(true); refreshPortraitBar(); return; }
     const items=[{icon:'👆',label:'선택: '+hitSim.name,fn:()=>{ G.selectedSim=hitSim; refreshPortraitBar(); updateHUD(true); }}];
     if(sel){
-      items.push({icon:'💬',label:'대화 (관계 '+Math.round(getRel(sel.id,hitSim.id))+')',fn:()=>command사교(sel,hitSim,'talk',true)});
-      items.push({icon:'😂',label:'농담 던지기',fn:()=>command사교(sel,hitSim,'joke',true)});
-      items.push({icon:'💢',label:'다툼',fn:()=>command사교(sel,hitSim,'argue',true)});
+      items.push({icon:'💬',label:'대화 (관계 '+Math.round(getRel(sel.id,hitSim.id))+')',fn:()=>commandSocial(sel,hitSim,'talk',true)});
+      items.push({icon:'😂',label:'농담 던지기',fn:()=>commandSocial(sel,hitSim,'joke',true)});
+      items.push({icon:'💢',label:'다툼',fn:()=>commandSocial(sel,hitSim,'argue',true)});
     }
     openCtxMenu(hitSim.name,items,e.clientX,e.clientY);
     return;
@@ -1694,14 +1694,14 @@ function toggleBuildMode(on){
   }
   closeCtxMenu();
 }
-function paint벽Line(c0,r0,c1,r1){
+function paintWallLine(c0,r0,c1,r1){
   const steps=Math.max(Math.abs(c1-c0),Math.abs(r1-r0));
-  if(steps===0){ paint벽(c0,r0); return; }
+  if(steps===0){ paintWall(c0,r0); return; }
   for(let i=0;i<=steps;i++)
-    paint벽(Math.round(c0+(c1-c0)*i/steps),Math.round(r0+(r1-r0)*i/steps));
+    paintWall(Math.round(c0+(c1-c0)*i/steps),Math.round(r0+(r1-r0)*i/steps));
 }
-function paint벽(c,r){
-  if(!canPlace벽(c,r)||G.grid[r][c]==='wall') return;
+function paintWall(c,r){
+  if(!canPlaceWall(c,r)||G.grid[r][c]==='wall') return;
   if(G.funds<WALL_COST){ toast('자금이 부족합니다!'); G.build.painting=false; return; }
   G.grid[r][c]='wall'; G.funds-=WALL_COST; updateHUD(true);
 }
@@ -1722,7 +1722,7 @@ function deleteAt(c,r){
   if(G.grid[r][c]==='wall'){ G.grid[r][c]='floor'; G.funds+=WALL_COST; updateHUD(true); }
   else if(G.grid[r][c]==='floor'){ G.grid[r][c]='grass'; G.funds+=FLOOR_COST; updateHUD(true); }
 }
-function stamp방Live(a,b){
+function stampRoom(a,b){
   const c0=clamp(Math.min(a.c,b.c),0,COLS-1), c1=clamp(Math.max(a.c,b.c),0,COLS-1);
   const r0=clamp(Math.min(a.r,b.r),0,ROWS-1), r1=clamp(Math.max(a.r,b.r),0,ROWS-1);
   const cost=roomCost(c0,r0,c1,r1);
@@ -1731,7 +1731,7 @@ function stamp방Live(a,b){
   for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){
     const edge=(r===r0||r===r1||c===c0||c===c1);
     if(edge){
-      if(G.grid[r][c]!=='wall'&&canPlace벽(c,r)){ G.grid[r][c]='wall'; spent+=WALL_COST; }
+      if(G.grid[r][c]!=='wall'&&canPlaceWall(c,r)){ G.grid[r][c]='wall'; spent+=WALL_COST; }
     }else if(G.grid[r][c]==='grass'&&!furnAt(c,r)){ G.grid[r][c]='floor'; spent+=FLOOR_COST; }
   }
   G.funds-=spent; updateHUD(true);
@@ -1773,7 +1773,7 @@ function gameLoop(ts){
 function wireUI(){
   $('btnNewGame').onclick=()=>{ showScreen('map'); drawMap(); };
   $('btnMapBack').onclick=()=>showScreen('menu');
-  $('btn터전취소').onclick=()=>$('lotModal').classList.add('hidden');
+  $('btnLotCancel').onclick=()=>$('lotModal').classList.add('hidden');
   const mapCv=$('mapCanvas');
   mapCv.addEventListener('mousemove',e=>{
     const i=lotAt(mapPos(e));
@@ -1783,7 +1783,7 @@ function wireUI(){
   mapCv.addEventListener('mouseleave',()=>{ mapHover=-1; drawMap(); });
   mapCv.addEventListener('click',e=>{
     const i=lotAt(mapPos(e));
-    if(i>=0) open터전Modal(i);
+    if(i>=0) openLotModal(i);
   });
   $('spd0').onclick=()=>{ if(!G.build.active) setSpeed(0); };
   $('spd1').onclick=()=>{ if(!G.build.active) setSpeed(1); else G.time.prevSpeed=1; };
