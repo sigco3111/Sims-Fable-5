@@ -1837,13 +1837,21 @@ function applySnapshot(snap){
   G.time = snap.time; G.time.speed = 1; G.time.prevSpeed = 1;
   G.rel = snap.rel || {};
   G.grid = snap.grid;
-  G.furniture = (snap.furniture || []).map(f=>({
-    type: f.type, c: f.c, r: f.r, light: !!f.light
-  }));
+  G.furniture = (snap.furniture || []).map(f=>{
+    const meta = FURN[f.type] || {};
+    return {
+      id: uid(),
+      type: f.type,
+      c: f.c, r: f.r,
+      w: meta.w || 1, h: meta.h || 1,
+      user: null,
+      light: !!f.light
+    };
+  });
   G.household = (snap.household || []).map(s=>({
     id: s.id, name: s.name, gender: s.gender, skin: s.skin,
     hairColor: s.hairColor, hairStyle: s.hairStyle, outfit: s.outfit,
-    traits: new Set(s.traits || []),
+    traits: Array.isArray(s.traits) ? s.traits.slice() : (s.traits ? Array.from(s.traits) : []),
     x: s.x, y: s.y, facing: s.facing, walkPhase: s.walkPhase,
     needs: {...s.needs}, path: null, action: null,
     moving: false, aiWait: 1,
