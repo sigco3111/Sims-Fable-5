@@ -32,7 +32,13 @@ button:active{transform:scale(.96)}
 .ghost-btn{background:#ffffff22;color:#fff;padding:9px 22px;border-radius:999px;font-size:15px;font-weight:700;border:1.5px solid #ffffff55}
 /* ---------- MODAL ---------- */
 .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,10,25,.55);backdrop-filter:blur(4px);z-index:50}
-.modal-card{background:#f8fafc;border-radius:18px;padding:22px 26px;max-width:880px;width:94vw;box-shadow:0 24px 70px rgba(0,0,0,.5);text-align:center}
+.save-slot-row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border:2px solid #e2e8f0;border-radius:10px;margin-bottom:6px}
+    .save-slot-row .slot-name{font-weight:800;color:#0f172a}
+    .save-slot-row .slot-meta{font-size:11.5px;color:#64748b}
+    .big-btn.secondary{background:#fef3c7;color:#92400e;box-shadow:0 6px 14px rgba(146,64,14,.25);font-size:18px;padding:13px 42px;margin-top:12px}
+    .big-btn.secondary:hover{background:#fde68a}
+    .hidden{display:none!important}
+    .modal-card{background:#f8fafc;border-radius:18px;padding:22px 26px;max-width:880px;width:94vw;box-shadow:0 24px 70px rgba(0,0,0,.5);text-align:center}
 .modal-card h3{font-size:24px;color:#0f172a;margin-bottom:2px}
 .modal-card p{color:#64748b;font-size:14px;margin-bottom:14px}
 #layoutChoices{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
@@ -145,6 +151,7 @@ button:active{transform:scale(.96)}
   <div class="menu-title">작은 인생</div>
   <div class="menu-sub">a cozy little life simulator — build, live, thrive</div>
   <button class="big-btn" id="btnNewGame">▶ &nbsp;새 게임</button>
+  <button class="big-btn secondary hidden" id="btnContinue" style="margin-top:12px;font-size:18px;padding:13px 42px">⏯ &nbsp;이어하기</button>
   <div class="menu-credit">전체 drawn in Canvas 2D • single HTML file • no installs</div>
 </div>
 
@@ -163,6 +170,24 @@ button:active{transform:scale(.96)}
     <p>준비된 집 배치를 고르거나, 빈 터전에서 직접 집을 지어보세요.</p>
     <div id="layoutChoices"></div>
     <button class="ghost2" style="width:auto;padding:10px 28px" id="btnLotCancel">취소</button>
+  </div>
+</div>
+
+<!-- save / load modal -->
+<div id="saveModal" class="modal hidden">
+  <div class="modal-card" style="max-width:480px">
+    <h3 id="saveModalTitle">저장 / 불러오기</h3>
+    <div id="saveSlotInfo" style="font-size:13px;color:#475569;background:#f1f5f9;border-radius:10px;padding:10px 12px;margin-bottom:14px"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+      <button class="cta" style="width:auto;flex:1;min-width:140px" id="btnDoSave">💾 지금 저장</button>
+      <button class="ghost2" style="width:auto;flex:1;min-width:140px" id="btnDoLoad">📂 저장된 게임 불러오기</button>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="ghost2" style="width:auto;flex:1;min-width:140px;color:#dc2626" id="btnDoDelete">🗑️ 저장 데이터 삭제</button>
+      <button class="ghost2" style="width:auto;flex:1;min-width:140px" id="btnDoExport">📤 JSON으로 내보내기</button>
+    </div>
+    <button class="ghost2" style="width:auto;padding:10px 28px;margin-top:14px" id="btnSaveClose">닫기</button>
+    <p style="font-size:11.5px;color:#64748b;margin-top:10px;line-height:1.4">저장 데이터는 브라우저의 localStorage에 보관됩니다. 시크릿 모드에서는 저장되지 않습니다.</p>
   </div>
 </div>
 
@@ -216,7 +241,7 @@ button:active{transform:scale(.96)}
     <div class="tb-spacer"></div>
     <button class="tb-btn" id="btnRel">💞 관계</button>
     <button class="tb-btn" id="btnBuild">🔨 건설 모드</button>
-    <button class="tb-btn" id="btnQuit">⏏ 메뉴</button>
+    <button class="tb-btn" id="btnSave">💾 저장</button><button class="tb-btn" id="btnQuit">⏏ 메뉴</button>
   </div>
   <div id="gameWrap"><canvas id="gameCanvas" width="936" height="612"></canvas></div>
   <div id="buildBadge" class="hidden">🔨 BUILD MODE — TIME PAUSED</div>
@@ -1746,6 +1771,201 @@ function setSpeed(v){
   $('spd3').classList.toggle('active',v===3);
 }
 
+
+// =====================================================================
+// SAVE / LOAD  (localStorage, single slot, JSON)
+// =====================================================================
+const SAVE_KEY = 'tinyLives.save.v1';
+
+// Build a clean serializable snapshot of the current game state.
+function snapshotGame(){
+  return {
+    v: 1,
+    savedAt: Date.now(),
+    lot: G.lot,
+    funds: G.funds,
+    time: { min: G.time.min, day: G.time.day, speed: 1, prevSpeed: 1 },
+    rel: G.rel,
+    grid: G.grid,
+    furniture: G.furniture.map(f=>({
+      type: f.type, c: f.c, r: f.r, light: !!f.light
+    })),
+    household: G.household.map(s=>({
+      id: s.id, name: s.name, gender: s.gender, skin: s.skin,
+      hairColor: s.hairColor, hairStyle: s.hairStyle, outfit: s.outfit,
+      traits: Array.from(s.traits),
+      x: s.x, y: s.y, facing: s.facing, walkPhase: s.walkPhase,
+      needs: {...s.needs},
+      decayMul: {...s.decayMul}, weight: {...s.weight},
+      speedMul: s.speedMul, eatBonus: s.eatBonus, bookBonus: s.bookBonus,
+      moodPenalty: s.moodPenalty, grumpy: !!s.grumpy
+    })),
+  };
+}
+
+function doSave(){
+  if(!G.lot || G.household.length===0){
+    toast('저장할 게임이 없어요. 먼저 새 게임을 시작하세요.');
+    return false;
+  }
+  try {
+    const snap = snapshotGame();
+    localStorage.setItem(SAVE_KEY, JSON.stringify(snap));
+    toast('💾 게임을 저장했어요!');
+    refreshSaveUi();
+    return true;
+  } catch(e){
+    console.error(e);
+    toast('저장 실패: ' + e.message);
+    return false;
+  }
+}
+
+function doLoad(){
+  const raw = localStorage.getItem(SAVE_KEY);
+  if(!raw){ toast('저장된 게임이 없어요.'); return false; }
+  let snap;
+  try { snap = JSON.parse(raw); } catch(e){ toast('저장 데이터가 손상되었어요.'); return false; }
+  if(!snap || snap.v!==1){ toast('저장 데이터 형식이 다릅니다.'); return false; }
+  return applySnapshot(snap);
+}
+
+// Apply snapshot without going through startGame() (skips creator + lot selection).
+function applySnapshot(snap){
+  G.lot = snap.lot;
+  G.funds = snap.funds;
+  G.time = snap.time; G.time.speed = 1; G.time.prevSpeed = 1;
+  G.rel = snap.rel || {};
+  G.grid = snap.grid;
+  G.furniture = (snap.furniture || []).map(f=>({
+    type: f.type, c: f.c, r: f.r, light: !!f.light
+  }));
+  G.household = (snap.household || []).map(s=>({
+    id: s.id, name: s.name, gender: s.gender, skin: s.skin,
+    hairColor: s.hairColor, hairStyle: s.hairStyle, outfit: s.outfit,
+    traits: new Set(s.traits || []),
+    x: s.x, y: s.y, facing: s.facing, walkPhase: s.walkPhase,
+    needs: {...s.needs}, path: null, action: null,
+    moving: false, aiWait: 1,
+    bubble: null, bubbleT: 0,
+    decayMul: {...s.decayMul}, weight: {...s.weight},
+    speedMul: s.speedMul, eatBonus: s.eatBonus, bookBonus: s.bookBonus,
+    moodPenalty: s.moodPenalty, grumpy: !!s.grumpy
+  }));
+  G.selectedSim = G.household[0] || null;
+  G.build = {active:false, tool:null, item:null, cat:'건설', roomStart:null, hover:null, painting:false};
+  G.relOpen = false;
+
+  // Sync derived UI state
+  rebuildOcc();
+  buildNeedRows();
+  buildPortraitBar();
+  refreshPortraitBar();
+  updateHUD(true);
+  closeCtxMenu();
+  $('relPanel').classList.add('hidden');
+  $('buildPanel').classList.remove('open');
+  $('buildBadge').classList.add('hidden');
+  setSpeed(1);
+  showScreen('game');
+  G.household.forEach(s=>setBubble(s,'👋',2));
+  toast('📂 저장된 게임을 불러왔어요!');
+  return true;
+}
+
+function doDeleteSave(){
+  if(!localStorage.getItem(SAVE_KEY)){ toast('삭제할 저장 데이터가 없어요.'); return; }
+  if(!confirm('저장된 게임을 정말 삭제할까요?')) return;
+  localStorage.removeItem(SAVE_KEY);
+  toast('🗑️ 저장 데이터를 삭제했어요.');
+  refreshSaveUi();
+}
+
+function doExportJson(){
+  const raw = localStorage.getItem(SAVE_KEY);
+  if(!raw){ toast('내보낼 저장 데이터가 없어요.'); return; }
+  const blob = new Blob([raw], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tiny-lives-save-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  toast('📤 JSON 파일을 다운로드했어요.');
+}
+
+function hasSave(){ return !!localStorage.getItem(SAVE_KEY); }
+
+function getSaveMeta(){
+  const raw = localStorage.getItem(SAVE_KEY);
+  if(!raw) return null;
+  try {
+    const s = JSON.parse(raw);
+    return {
+      lot: s.lot ? s.lot.name : '?',
+      day: s.time ? s.time.day : '?',
+      min: s.time ? s.time.day*0+Math.floor(s.time.min/60)+'시' : '',
+      funds: s.funds,
+      people: (s.household || []).length,
+      savedAt: s.savedAt
+    };
+  } catch(e){ return null; }
+}
+
+function refreshSaveUi(){
+  // Show / hide '이어하기' button on menu
+  const cont = $('btnContinue');
+  if(cont){
+    cont.classList.toggle('hidden', !hasSave());
+  }
+  // Update slot info text inside save modal
+  const info = $('saveSlotInfo');
+  if(info){
+    const m = getSaveMeta();
+    if(!m){
+      info.innerHTML = '<b>저장된 게임 없음</b> — 새 게임을 시작한 뒤 「💾 저장」을 눌러주세요.';
+    } else {
+      const date = new Date(m.savedAt);
+      const dateStr = date.toLocaleString('ko-KR');
+      info.innerHTML = '<b>저장된 게임:</b> ' + m.lot + ' · ' + m.day + '일차 · ' + m.people + '명<br>' +
+                       '<b>자금:</b> §' + m.funds.toLocaleString('en-US') + ' · <b>저장 시각:</b> ' + dateStr;
+    }
+  }
+}
+
+function openSaveModal(){
+  refreshSaveUi();
+  $('saveModal').classList.remove('hidden');
+}
+
+function closeSaveModal(){
+  $('saveModal').classList.add('hidden');
+}
+
+function continueFromSave(){
+  if(!hasSave()){ toast('저장된 게임이 없어요.'); return; }
+  if(doLoad()) closeSaveModal();
+}
+
+function autoSaveTick(){
+  // Auto-save every 5 minutes of real time when game is active
+  if(G.screen!=='game' || !G.lot) return;
+  if(!G.household.length) return;
+  doSave();
+}
+
+let autoSaveTimer = null;
+function startAutoSave(){
+  stopAutoSave();
+  // Every 5 minutes of real time
+  autoSaveTimer = setInterval(autoSaveTick, 5*60*1000);
+}
+function stopAutoSave(){
+  if(autoSaveTimer){ clearInterval(autoSaveTimer); autoSaveTimer=null; }
+}
+
 // =====================================================================
 // GAME LOOP
 // =====================================================================
@@ -1772,6 +1992,21 @@ function gameLoop(ts){
 // =====================================================================
 function wireUI(){
   $('btnNewGame').onclick=()=>{ showScreen('map'); drawMap(); };
+  $('btnContinue').onclick=continueFromSave;
+  $('btnSave').onclick=openSaveModal;
+  $('btnDoSave').onclick=()=>{ if(doSave()){ refreshSaveUi(); } };
+  $('btnDoLoad').onclick=()=>{ if(doLoad()) closeSaveModal(); };
+  $('btnDoDelete').onclick=doDeleteSave;
+  $('btnDoExport').onclick=doExportJson;
+  $('btnSaveClose').onclick=closeSaveModal;
+  // Close save modal on Escape or backdrop click
+  $('saveModal').addEventListener('click', e=>{ if(e.target.id==='saveModal') closeSaveModal(); });
+  refreshSaveUi();
+  // Auto-save when page is about to be hidden (refresh/close)
+  window.addEventListener('beforeunload', ()=>{ try { doSave(); } catch(e){} });
+  // Auto-save on visibility change
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') try{doSave();}catch(e){} });
+  startAutoSave();
   $('btnMapBack').onclick=()=>showScreen('menu');
   $('btnLotCancel').onclick=()=>$('lotModal').classList.add('hidden');
   const mapCv=$('mapCanvas');
